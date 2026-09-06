@@ -240,7 +240,7 @@ export default function SignupScreen() {
                 {termsAccepted && <Ionicons name="checkmark" size={14} color={theme.onPrimary} />}
               </View>
               <Text className="font-sans flex-1 text-sm text-secondary leading-snug">
-                By signing up, you agree to Chronicle's <Text className="font-sans text-primary underline">Terms of Service</Text> and <Text className="font-sans text-primary underline">Privacy Policy</Text>.
+                By signing up, you agree to Chronicle&apos;s <Text className="font-sans text-primary underline">Terms of Service</Text> and <Text className="font-sans text-primary underline">Privacy Policy</Text>.
               </Text>
             </TouchableOpacity>
           </View>
@@ -271,11 +271,13 @@ export default function SignupScreen() {
             </TouchableOpacity>
           </View>
 
-          <View className="flex-row justify-center pb-4">
-            <Text className="text-sm text-secondary">Already have an account? </Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/login' as any)}>
-              <Text className="text-sm text-primary font-bold">Log In</Text>
-            </TouchableOpacity>
+          <View className="items-center mt-4">
+            <Text className="font-sans text-[15px] text-secondary">
+              Already have an account?{' '}
+              <Text onPress={() => router.replace('/login' as any)} className="font-bold text-primary underline">
+                Log In
+              </Text>
+            </Text>
           </View>
 
         </ScrollView>

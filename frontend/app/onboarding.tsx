@@ -48,16 +48,16 @@ const slides = [
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollX = useRef(new Animated.Value(0)).current;
+  const [scrollX] = useState(() => new Animated.Value(0));
   const slidesRef = useRef<FlatList>(null);
 
-  const viewableItemsChanged = useRef(({ viewableItems }: any) => {
+  const viewableItemsChanged = React.useCallback(({ viewableItems }: any) => {
     if (viewableItems[0]) {
       setCurrentIndex(viewableItems[0].index);
     }
-  }).current;
+  }, []);
 
-  const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
+  const viewConfig = React.useMemo(() => ({ viewAreaCoveragePercentThreshold: 50 }), []);
 
   const scrollToNext = () => {
     if (currentIndex < slides.length - 1) {

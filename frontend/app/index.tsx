@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useTheme } from '../src/utils/theme';
 import { View, Text, Animated, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,9 +12,9 @@ export default function SplashScreenComponent() {
   const router = useRouter();
   const { isAuthenticated, isFirstLaunch } = useAppSelector((state) => state.auth);
 
-  const logoScale = useRef(new Animated.Value(0.5)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const loaderOpacity = useRef(new Animated.Value(0)).current;
+  const [logoScale] = useState(() => new Animated.Value(0.5));
+  const [logoOpacity] = useState(() => new Animated.Value(0));
+  const [loaderOpacity] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     // 1. Logo Popup Animation
@@ -56,7 +56,7 @@ export default function SplashScreenComponent() {
       clearTimeout(loaderTimer);
       clearTimeout(routeTimer);
     };
-  }, [isAuthenticated, isFirstLaunch, router]);
+  }, [isAuthenticated, isFirstLaunch, router, logoScale, logoOpacity, loaderOpacity]);
 
   return (
     <SafeAreaView className="flex-1 bg-surface items-center justify-center relative">

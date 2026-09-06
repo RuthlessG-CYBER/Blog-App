@@ -39,7 +39,7 @@ export default function NotificationsScreen() {
       <View className="flex-1">
         <Text className="text-on-surface text-[15px] leading-relaxed">
           <Text className="font-bold">{item.actor.name}</Text> liked your post 
-          {item.post ? <Text className="font-semibold text-primary"> "{item.post.title}"</Text> : ' (deleted post)'}
+          {item.post ? <Text className="font-semibold text-primary"> &quot;{item.post.title}&quot;</Text> : ' (deleted post)'}
         </Text>
         <Text className="text-secondary text-xs mt-1">
           {new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} at {new Date(item.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
@@ -77,7 +77,7 @@ export default function NotificationsScreen() {
               <Ionicons name="notifications-off-outline" size={48} color={theme.outline} />
               <Text className="text-lg font-semibold text-on-surface mt-4">No notifications yet</Text>
               <Text className="text-center text-secondary mt-2">
-                When someone likes or interacts with your posts, you'll see it here.
+                When someone likes or interacts with your posts, you&apos;ll see it here.
               </Text>
             </View>
           }
