@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --on-error: 255 255 255;
+    --on-background: 19 27 46;
+    --primary-container: 15 118 110;
+    --on-error-container: 147 0 10;
+    --outline: 110 121 119;
+    --tertiary-fixed: 255 218 218;
+    --on-secondary-fixed: 17 28 45;
+    --surface-container-low: 242 243 255;
+    --on-surface: 19 27 46;
+    --surface-bright: 250 248 255;
+    --secondary-container: 213 224 248;
+    --secondary-fixed: 216 227 251;
+    --outline-variant: 189 201 198;
+    --on-primary: 255 255 255;
+    --tertiary: 166 0 47;
+    --on-secondary: 255 255 255;
+    --surface: 250 248 255;
+    --on-tertiary-fixed-variant: 146 0 40;
+    --inverse-on-surface: 238 240 255;
+    --error-container: 255 218 214;
+    --on-tertiary: 255 255 255;
+    --inverse-surface: 40 48 68;
+    --on-surface-variant: 62 73 71;
+    --on-primary-fixed: 0 32 29;
+    --error: 186 26 26;
+    --on-primary-container: 163 250 239;
+    --surface-container-highest: 218 226 253;
+    --primary-fixed-dim: 128 213 203;
+    --surface-container-lowest: 255 255 255;
+    --surface-container: 234 237 255;
+    --primary-fixed: 156 242 232;
+    --surface-dim: 210 217 244;
+    --on-tertiary-fixed: 64 0 12;
+    --on-primary-fixed-variant: 0 80 74;
+    --on-tertiary-container: 255 228 228;
+    --surface-tint: 0 106 99;
+    --surface-variant: 218 226 253;
+    --secondary: 84 95 115;
+    --inverse-primary: 128 213 203;
+    --tertiary-container: 210 9 63;
+    --background: 250 248 255;
+    --secondary-fixed-dim: 188 199 222;
+    --on-secondary-fixed-variant: 60 71 90;
+    --surface-container-high: 226 231 255;
+    --tertiary-fixed-dim: 255 179 182;
+    --primary: 0 92 85;
+    --on-secondary-container: 88 99 119;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+    --on-error: 0 0 0;
+    --on-background: 255 255 255;
+    --primary-container: 38 38 38;
+    --on-error-container: 255 170 170;
+    --outline: 64 64 64;
+    --tertiary-fixed: 255 218 218;
+    --on-secondary-fixed: 17 28 45;
+    --surface-container-low: 10 10 10;
+    --on-surface: 255 255 255;
+    --surface-bright: 26 26 26;
+    --secondary-container: 51 51 51;
+    --secondary-fixed: 216 227 251;
+    --outline-variant: 38 38 38;
+    --on-primary: 0 0 0;
+    --tertiary: 255 179 182;
+    --on-secondary: 0 0 0;
+    --surface: 0 0 0;
+    --on-tertiary-fixed-variant: 146 0 40;
+    --inverse-on-surface: 0 0 0;
+    --error-container: 59 0 0;
+    --on-tertiary: 104 0 26;
+    --inverse-surface: 255 255 255;
+    --on-surface-variant: 163 163 163;
+    --on-primary-fixed: 0 32 29;
+    --error: 255 85 85;
+    --on-primary-container: 255 255 255;
+    --surface-container-highest: 38 38 38;
+    --primary-fixed-dim: 128 213 203;
+    --surface-container-lowest: 0 0 0;
+    --surface-container: 18 18 18;
+    --primary-fixed: 156 242 232;
+    --surface-dim: 0 0 0;
+    --on-tertiary-fixed: 64 0 12;
+    --on-primary-fixed-variant: 0 80 74;
+    --on-tertiary-container: 255 179 182;
+    --surface-tint: 255 255 255;
+    --surface-variant: 28 28 28;
+    --secondary: 163 163 163;
+    --inverse-primary: 0 0 0;
+    --tertiary-container: 146 0 40;
+    --background: 0 0 0;
+    --secondary-fixed-dim: 188 199 222;
+    --on-secondary-fixed-variant: 60 71 90;
+    --surface-container-high: 28 28 28;
+    --tertiary-fixed-dim: 255 179 182;
+    --primary: 255 255 255;
+    --on-secondary-container: 255 255 255;
+    }
+  }
+
+  *, Text, TextInput {
+    font-family: 'Saira_400Regular';
+  }
+
+  .font-medium {
+    font-family: 'Saira_500Medium';
+    font-weight: normal;
+  }
+
+  .font-semibold {
+    font-family: 'Saira_600SemiBold';
+    font-weight: normal;
+  }
+
+  .font-bold {
+    font-family: 'Saira_700Bold';
+    font-weight: normal;
+  }
+
+  .font-extrabold {
+    font-family: 'Saira_800ExtraBold';
+    font-weight: normal;
+  }
+}

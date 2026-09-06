@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash          String
+  bio                   String?
+  profileImage          String?
+  profileImageUpdatedAt DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  posts                 Post[]
+  likes                 Like[]
+  notificationsReceived Notification[] @relation("ReceivedNotifications")
+  notificationsSent     Notification[] @relation("SentNotifications")
+
+  @@index([email])
+}
+
+model Post {
+  id            String   @id @default(uuid())
+  userId        String
+  title         String
+  content       String
+  imageUrl      String?
+  imagePublicId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes         Like[]
+  notifications Notification[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([title])
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   
+  actorId   String   
+  postId    String?  
+  type      String   
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation("ReceivedNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actor     User     @relation("SentNotifications", fields: [actorId], references: [id], onDelete: Cascade)
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
