@@ -8,7 +8,7 @@ import {
   fetchPosts,
   fetchDiscoverPosts,
   fetchFollowingPosts,
-  toggleLikePost,
+  toggleLikePost, toggleSavePost,
   updateFollowState,
 } from "../../src/store/slices/postSlice";
 import { toggleFollow } from "../../src/api";
@@ -203,11 +203,13 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-          <Ionicons
-            name="bookmark-outline"
-            size={16}
-            color={theme.outlineVariant}
-          />
+          <TouchableOpacity onPress={() => dispatch(toggleSavePost(item.id) as any)}>
+            <Ionicons 
+              name={item.isSaved ? "bookmark" : "bookmark-outline"} 
+              size={16} 
+              color={item.isSaved ? theme.primary : theme.outlineVariant} 
+            />
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     </View>
