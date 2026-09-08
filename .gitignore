@@ -9,3 +9,4 @@ dist/
 # Git
 *.log
 prd.txt
+\n# Dev Scripts\n.dev-scripts/
