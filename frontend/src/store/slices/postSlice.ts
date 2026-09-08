@@ -104,7 +104,16 @@ const postSlice = createSlice({
     loading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    updateFollowState: (state, action) => {
+      const { targetUserId, isFollowing } = action.payload;
+      state.discoverPosts.forEach((post: any) => {
+        if (post.user?.id === targetUserId) {
+          post.isFollowing = isFollowing;
+        }
+      });
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchPosts.pending, (state) => {
@@ -172,4 +181,5 @@ const postSlice = createSlice({
   },
 });
 
+export const { updateFollowState } = postSlice.actions;
 export default postSlice.reducer;

@@ -4,7 +4,7 @@ import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppDispatch, useAppSelector } from '../../src/store/hooks';
-import { fetchDiscoverPosts, toggleLikePost } from '../../src/store/slices/postSlice';
+import { fetchDiscoverPosts, toggleLikePost, updateFollowState } from '../../src/store/slices/postSlice';
 import { toggleFollow } from '../../src/api';
 import { fetchMe } from '../../src/store/slices/authSlice';
 import Toast from 'react-native-toast-message';
@@ -21,14 +21,16 @@ export default function HomeScreen() {
 
   const flatListRef = useRef<FlatList>(null);
 
-  const handleFollow = async (targetUserId: string) => {
+  const handleFollow = async (targetUserId: string, currentIsFollowing: boolean) => {
+    // Optimistic UI update
+    dispatch(updateFollowState({ targetUserId, isFollowing: !currentIsFollowing }));
     try {
-      await toggleFollow(targetUserId);
-      dispatch(fetchDiscoverPosts()); // Refresh discover feed to update follow status
-      dispatch(fetchMe()); // Refresh user profile to update following count
-      Toast.show({ type: 'success', text1: 'Follow status updated' });
+      const res = await toggleFollow(targetUserId);
+      dispatch(updateFollowState({ targetUserId, isFollowing: res.data.data.isFollowing }));
+      dispatch(fetchMe()); // Refresh user profile to update following count in background
     } catch (error) {
-      Toast.show({ type: 'error', text1: 'Failed to update follow status' });
+      // Revert on error
+      dispatch(updateFollowState({ targetUserId, isFollowing: currentIsFollowing }));
     }
   };
   const lastTabPress = useRef(0);
@@ -80,7 +82,7 @@ export default function HomeScreen() {
           <View className="flex-row items-center gap-2">
             {item.user?.id !== user?.id && (
               <TouchableOpacity 
-                onPress={() => handleFollow(item.user.id)}
+                onPress={() => handleFollow(item.user.id, item.isFollowing)}
                 className={`px-3 py-1 rounded-full ${item.isFollowing ? 'bg-surface-container border border-outline-variant' : 'bg-primary'}`}
               >
                 <Text className={`text-xs font-semibold ${item.isFollowing ? 'text-on-surface' : 'text-on-primary'}`}>
