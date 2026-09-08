@@ -120,6 +120,29 @@ export const toggleLike = async (req: Request, res: Response, next: NextFunction
   }
 };
 
+export const toggleSaveController = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const postId = req.params.id;
+    const { toggleSave } = require('../services/post.service');
+    const result = await toggleSave(userId, postId);
+    return successResponse(res, 200, result.isSaved ? 'Post saved' : 'Post unsaved', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getSavedFeed = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const { getSavedPosts } = require('../services/post.service');
+    const data = await getSavedPosts(userId, req.query);
+    return successResponse(res, 200, 'Saved posts retrieved', data.posts, data.pagination);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createComment = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.userId;

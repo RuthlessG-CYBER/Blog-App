@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useTheme } from '../../src/utils/theme';
 import {
   View,
@@ -12,7 +12,7 @@ import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppDispatch, useAppSelector } from "../../src/store/hooks";
 import { logoutUser } from "../../src/store/slices/authSlice";
-import { fetchPosts, deletePost, toggleLikePost } from "../../src/store/slices/postSlice";
+import { fetchPosts, deletePost, toggleLikePost, fetchSavedPosts, toggleSavePost } from "../../src/store/slices/postSlice";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from 'react-native-toast-message';
@@ -22,13 +22,18 @@ export default function ProfileScreen() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { user } = useAppSelector((state) => state.auth);
-  const { posts, loading } = useAppSelector((state) => state.posts);
+  const { posts: allPosts, savedPosts, loading } = useAppSelector((state) => state.posts);
+  const [activeTab, setActiveTab] = useState<'Stories' | 'Saved'>('Stories');
 
   useEffect(() => {
-    dispatch(fetchPosts());
-  }, [dispatch]);
+    if (activeTab === 'Stories') {
+      dispatch(fetchPosts());
+    } else {
+      dispatch(fetchSavedPosts());
+    }
+  }, [dispatch, activeTab]);
 
-  const userPosts = posts.filter((post: any) => post.userId === user?.id);
+  const userPosts = allPosts.filter((post: any) => post.userId === user?.id);
 
   const handleLogout = () => {
     Alert.alert(
@@ -194,15 +199,15 @@ export default function ProfileScreen() {
         </View>
 
         <View className="pb-8 pt-4">
-          {loading && userPosts.length === 0 ? (
+          {loading && (activeTab === 'Stories' ? userPosts : savedPosts).length === 0 ? (
             <View className="py-10 items-center justify-center">
               <ActivityIndicator size="small" color={theme.primary} />
             </View>
-          ) : userPosts.length > 0 ? (
-            userPosts.map((item: any, index: number) => (
+          ) : (activeTab === 'Stories' ? userPosts : savedPosts).length > 0 ? (
+            (activeTab === 'Stories' ? userPosts : savedPosts).map((item: any, index: number) => (
               <View key={item.id} className="px-margin-mobile">
                 <TouchableOpacity
-                  className={`py-space-md ${index !== userPosts.length - 1 ? "border-b border-surface-container" : ""}`}
+                  className={`py-space-md ${index !== (activeTab === 'Stories' ? userPosts : savedPosts).length - 1 ? "border-b border-surface-container" : ""}`}
                   activeOpacity={0.7}
                 >
                   <View className="flex-row items-center justify-between mb-1.5">
@@ -268,11 +273,13 @@ export default function ProfileScreen() {
                           <Text className="text-xs text-secondary">{item.commentsCount || 0}</Text>
                         </TouchableOpacity>
                     </View>
-                    <Ionicons
-                      name="bookmark-outline"
-                      size={16}
-                      color={theme.outlineVariant}
-                    />
+                    <TouchableOpacity onPress={() => dispatch(toggleSavePost(item.id) as any)}>
+                      <Ionicons
+                        name={item.isSaved ? "bookmark" : "bookmark-outline"}
+                        size={16}
+                        color={item.isSaved ? theme.primary : theme.outlineVariant}
+                      />
+                    </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
               </View>

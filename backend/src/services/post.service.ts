@@ -60,7 +60,8 @@ export const getPosts = async (userId: string, query: any) => {
       orderBy,
       include: {
         _count: { select: { likes: true, comments: true } },
-        likes: { where: { userId } }
+        likes: { where: { userId } },
+      savedBy: { where: { userId } }
       }
     }),
     prisma.post.count({ where }),
@@ -78,6 +79,7 @@ export const getPosts = async (userId: string, query: any) => {
     ...post,
     likesCount: post._count.likes, commentsCount: post._count.comments,
     isLiked: post.likes.length > 0,
+      isSaved: post.savedBy?.length > 0,
     likes: undefined,
     _count: undefined,
   }));
@@ -143,7 +145,8 @@ export const getDiscoverPosts = async (userId: string, query: any) => {
     include: {
       user: { select: { id: true, name: true, email: true, profileImage: true } },
       _count: { select: { likes: true, comments: true } },
-      likes: { where: { userId } }
+      likes: { where: { userId } },
+      savedBy: { where: { userId } }
     }
   });
 
@@ -159,6 +162,7 @@ export const getDiscoverPosts = async (userId: string, query: any) => {
       ...post,
       likesCount: post._count.likes, commentsCount: post._count.comments,
       isLiked: post.likes.length > 0,
+      isSaved: post.savedBy?.length > 0,
       likes: undefined,
       _count: undefined,
     };
@@ -234,7 +238,8 @@ export const getFollowingPosts = async (userId: string, query: any) => {
     include: {
       user: { select: { id: true, name: true, email: true, profileImage: true } },
       _count: { select: { likes: true, comments: true } },
-      likes: { where: { userId } }
+      likes: { where: { userId } },
+      savedBy: { where: { userId } }
     }
   });
 
@@ -245,6 +250,7 @@ export const getFollowingPosts = async (userId: string, query: any) => {
       ...post,
       likesCount: post._count.likes, commentsCount: post._count.comments,
       isLiked: post.likes.length > 0,
+      isSaved: post.savedBy?.length > 0,
       likes: undefined,
       _count: undefined,
     };
@@ -396,6 +402,71 @@ export const deletePostImage = async (userId: string, postId: string) => {
   });
 
   return updatedPost;
+};
+
+export const toggleSave = async (userId: string, postId: string) => {
+  const post = await prisma.post.findUnique({ where: { id: postId } });
+  if (!post) throw { statusCode: 404, message: 'Post not found' };
+
+  const saved = await prisma.savedPost.findUnique({
+    where: { userId_postId: { userId, postId } }
+  });
+
+  if (saved) {
+    await prisma.savedPost.delete({ where: { id: saved.id } });
+    return { isSaved: false };
+  } else {
+    await prisma.savedPost.create({ data: { userId, postId } });
+    return { isSaved: true };
+  }
+};
+
+export const getSavedPosts = async (userId: string, query: any) => {
+  const { page = 1, limit = 10 } = query;
+  
+  const skip = (Number(page) - 1) * Number(limit);
+  const take = Math.min(Number(limit), 50);
+
+  const [savedPosts, total] = await prisma.$transaction([
+    prisma.savedPost.findMany({
+      where: { userId },
+      skip,
+      take,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        post: {
+          include: {
+            user: { select: { id: true, name: true, profileImage: true } },
+            _count: { select: { likes: true, comments: true } },
+            likes: { where: { userId } },
+            savedBy: { where: { userId } }
+          }
+        }
+      }
+    }),
+    prisma.savedPost.count({ where: { userId } }),
+  ]);
+
+  const formattedPosts = savedPosts.map(sp => ({
+    ...sp.post,
+    likesCount: sp.post._count.likes,
+    commentsCount: sp.post._count.comments,
+    isLiked: sp.post.likes.length > 0,
+    isSaved: true,
+    likes: undefined,
+    savedBy: undefined,
+    _count: undefined,
+  }));
+
+  return {
+    posts: formattedPosts,
+    pagination: {
+      page: Number(page),
+      limit: take,
+      total,
+      totalPages: Math.ceil(total / take),
+    },
+  };
 };
 
 export const addComment = async (userId: string, postId: string, content: string) => {

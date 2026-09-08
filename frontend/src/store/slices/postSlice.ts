@@ -96,6 +96,30 @@ export const deletePost = createAsyncThunk(
   }
 );
 
+export const toggleSavePost = createAsyncThunk(
+  'posts/toggleSavePost',
+  async (postId: string, { rejectWithValue }) => {
+    try {
+      const response = await api.post(`/posts/${postId}/save`);
+      return { postId, isSaved: response.data.data.isSaved };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const fetchSavedPosts = createAsyncThunk(
+  'posts/fetchSavedPosts',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/posts/saved');
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 export const toggleLikePost = createAsyncThunk(
   'posts/toggleLikePost',
   async (postId: string, { rejectWithValue }) => {
@@ -114,6 +138,7 @@ const postSlice = createSlice({
     posts: [],
     discoverPosts: [],
     followingPosts: [],
+    savedPosts: [],
     loading: false,
     error: null,
   },
@@ -156,6 +181,17 @@ const postSlice = createSlice({
         state.loading = false;
         state.error = action.payload as any;
       })
+      .addCase(fetchSavedPosts.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchSavedPosts.fulfilled, (state, action) => {
+        state.loading = false;
+        state.savedPosts = action.payload;
+      })
+      .addCase(fetchSavedPosts.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as any;
+      })
       .addCase(fetchDiscoverPosts.pending, (state) => {
         state.loading = true;
       })
@@ -193,6 +229,22 @@ const postSlice = createSlice({
       .addCase(deletePost.fulfilled, (state, action) => {
         state.posts = state.posts.filter((p: any) => p.id !== action.payload);
         state.discoverPosts = state.discoverPosts.filter((p: any) => p.id !== action.payload);
+      })
+      .addCase(toggleSavePost.fulfilled, (state, action) => {
+        const { postId, isSaved } = action.payload;
+        
+        const updateSaved = (arr: any[]) => {
+          const index = arr.findIndex((p: any) => p.id === postId);
+          if (index !== -1) arr[index].isSaved = isSaved;
+        };
+
+        updateSaved(state.posts);
+        updateSaved(state.discoverPosts);
+        updateSaved(state.followingPosts);
+        
+        if (!isSaved) {
+          state.savedPosts = state.savedPosts.filter((p: any) => p.id !== postId);
+        }
       })
       .addCase(toggleLikePost.fulfilled, (state, action) => {
         const { postId, isLiked } = action.payload;
