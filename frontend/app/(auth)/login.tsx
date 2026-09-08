@@ -38,7 +38,10 @@ export default function LoginScreen() {
     }
     
     try {
+      // Show authenticating state for 3 seconds before hitting the API
       setLoginStatus('logging_in');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
       const response = await api.post('/auth/login', { email, password });
       await SecureStore.setItemAsync('token', response.data.data.token);
       
@@ -46,13 +49,19 @@ export default function LoginScreen() {
       setTimeout(async () => {
         setLoginStatus('idle');
         dispatch(setCredentials(response.data.data));
-      }, 2500);
+      }, 1000);
     } catch (err: any) {
       setLoginStatus('idle');
+      
+      let msg = err.response?.data?.message || err.message || 'Something went wrong';
+      if (err.response?.status === 401) {
+        msg = 'Incorrect password';
+      }
+
       Toast.show({
         type: 'error',
         text1: 'Login Failed',
-        text2: err.response?.data?.message || err.message || 'Something went wrong',
+        text2: msg,
         position: 'bottom',
       });
     }
