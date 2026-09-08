@@ -15,9 +15,9 @@ export const fetchPosts = createAsyncThunk(
 
 export const fetchFollowingPosts = createAsyncThunk(
   'posts/fetchFollowingPosts',
-  async (_, { rejectWithValue }) => {
+  async (depth: number = 0, { rejectWithValue }) => {
     try {
-      const response = await api.get('/posts/feed/following');
+      const response = await api.get(`/posts/feed/following?depth=${depth}`);
       return response.data.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || error.message);
@@ -27,9 +27,9 @@ export const fetchFollowingPosts = createAsyncThunk(
 
 export const fetchDiscoverPosts = createAsyncThunk(
   'posts/fetchDiscoverPosts',
-  async (_, { rejectWithValue }) => {
+  async (depth: number = 0, { rejectWithValue }) => {
     try {
-      const response = await api.get('/posts/feed/discover');
+      const response = await api.get(`/posts/feed/discover?depth=${depth}`);
       return response.data.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || error.message);
