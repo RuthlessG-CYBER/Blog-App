@@ -7,7 +7,6 @@ import { Image } from 'expo-image';
 import { useTheme } from '../src/utils/theme';
 import { getComments, addComment } from '../src/api';
 import { useAppSelector } from '../src/store/hooks';
-import Toast from 'react-native-toast-message';
 
 export default function CommentsScreen() {
   const { postId } = useLocalSearchParams();
@@ -19,20 +18,22 @@ export default function CommentsScreen() {
   const [submitting, setSubmitting] = useState(false);
   const { user } = useAppSelector((state) => state.auth);
 
-  const fetchComments = async () => {
-    try {
-      setLoading(true);
-      const res = await getComments(postId as string);
-      setComments(res.data.data);
-    } catch (error: any) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    useEffect(() => {
+    const fetchComments = async () => {
+      try {
+        setLoading(true);
+        const res = await getComments(postId as string);
+        setComments(res.data.data);
+      } catch (error: any) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  useEffect(() => {
-    fetchComments();
+    if (postId) {
+      fetchComments();
+    }
   }, [postId]);
 
   const handleSubmit = async () => {
@@ -43,7 +44,7 @@ export default function CommentsScreen() {
       setComments([res.data.data, ...comments]);
       setContent('');
     } catch (error: any) {
-      Toast.show({ type: 'error', text1: 'Failed to add comment' });
+      
     } finally {
       setSubmitting(false);
     }
