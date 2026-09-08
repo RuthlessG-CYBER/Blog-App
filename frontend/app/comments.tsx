@@ -19,21 +19,21 @@ export default function CommentsScreen() {
   const [submitting, setSubmitting] = useState(false);
   const { user } = useAppSelector((state) => state.auth);
 
-  useEffect(() => {
-    fetchComments();
-  }, [postId]);
-
   const fetchComments = async () => {
     try {
       setLoading(true);
       const res = await getComments(postId as string);
       setComments(res.data.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchComments();
+  }, [postId]);
 
   const handleSubmit = async () => {
     if (!content.trim()) return;
@@ -42,7 +42,7 @@ export default function CommentsScreen() {
       const res = await addComment(postId as string, content.trim());
       setComments([res.data.data, ...comments]);
       setContent('');
-    } catch (error) {
+    } catch (error: any) {
       Toast.show({ type: 'error', text1: 'Failed to add comment' });
     } finally {
       setSubmitting(false);
