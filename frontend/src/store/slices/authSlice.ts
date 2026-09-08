@@ -87,7 +87,7 @@ interface AuthState {
 const initialState: AuthState = {
   user: null,
   token: null,
-  loading: true, // initial state is loading while checking auth
+  loading: true,
   error: null,
   isAuthenticated: false,
   isFirstLaunch: true,

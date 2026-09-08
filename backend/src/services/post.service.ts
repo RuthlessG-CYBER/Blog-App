@@ -59,16 +59,24 @@ export const getPosts = async (userId: string, query: any) => {
       take,
       orderBy,
       include: {
-        _count: { select: { likes: true } },
+        _count: { select: { likes: true, comments: true } },
         likes: { where: { userId } }
       }
     }),
     prisma.post.count({ where }),
   ]);
 
+  
+  const following = await prisma.follow.findMany({
+    where: { followerId: userId, followingId: { in: posts.map(p => p.userId) } }
+  });
+  const followingIds = new Set(following.map(f => f.followingId));
+
   const formattedPosts = posts.map(post => ({
+    isFollowing: followingIds.has(post.userId),
+
     ...post,
-    likesCount: post._count.likes,
+    likesCount: post._count.likes, commentsCount: post._count.comments,
     isLiked: post.likes.length > 0,
     likes: undefined,
     _count: undefined,
@@ -104,9 +112,7 @@ export const getDiscoverPosts = async (userId: string, query: any) => {
         user: {
           select: { id: true, name: true, email: true, profileImage: true }
         },
-        _count: {
-          select: { likes: true }
-        },
+        _count: { select: { likes: true, comments: true } },
         likes: {
           where: { userId }
         }
@@ -117,7 +123,7 @@ export const getDiscoverPosts = async (userId: string, query: any) => {
 
   const formattedPosts = posts.map(post => ({
     ...post,
-    likesCount: post._count.likes,
+    likesCount: post._count.likes, commentsCount: post._count.comments,
     isLiked: post.likes.length > 0,
     likes: undefined,
     _count: undefined,
@@ -269,4 +275,48 @@ export const deletePostImage = async (userId: string, postId: string) => {
   });
 
   return updatedPost;
+};
+
+export const addComment = async (userId: string, postId: string, content: string) => {
+  const post = await prisma.post.findUnique({ where: { id: postId } });
+  if (!post) throw { statusCode: 404, message: 'Post not found' };
+
+  const comment = await prisma.comment.create({
+    data: {
+      userId,
+      postId,
+      content,
+    },
+    include: {
+      user: {
+        select: { id: true, name: true, email: true, profileImage: true },
+      },
+    },
+  });
+
+  if (userId !== post.userId) {
+    await prisma.notification.create({
+      data: {
+        userId: post.userId,
+        actorId: userId,
+        postId: postId,
+        type: 'COMMENT',
+      },
+    });
+  }
+
+  return comment;
+};
+
+export const getComments = async (postId: string) => {
+  const comments = await prisma.comment.findMany({
+    where: { postId },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      user: {
+        select: { id: true, name: true, profileImage: true },
+      },
+    },
+  });
+  return comments;
 };

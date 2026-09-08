@@ -167,11 +167,11 @@ export default function ProfileScreen() {
               <Text className="text-xs text-secondary mt-1">Stories</Text>
             </View>
             <View className="flex-1 items-center justify-center py-1 border-r border-surface-container">
-              <Text className="text-xl font-bold text-on-surface">0</Text>
+              <Text className="text-xl font-bold text-on-surface">{user?.followersCount || 0}</Text>
               <Text className="text-xs text-secondary mt-1">Followers</Text>
             </View>
             <View className="flex-1 items-center justify-center py-1">
-              <Text className="text-xl font-bold text-on-surface">0</Text>
+              <Text className="text-xl font-bold text-on-surface">{user?.followingCount || 0}</Text>
               <Text className="text-xs text-secondary mt-1">Following</Text>
             </View>
           </View>
@@ -259,14 +259,14 @@ export default function ProfileScreen() {
                           {item.likesCount || 0}
                         </Text>
                       </TouchableOpacity>
-                      <View className="flex-row items-center gap-1.5">
-                        <Ionicons
-                          name="chatbubble-outline"
-                          size={16}
-                          color={theme.outline}
-                        />
-                        <Text className="text-xs text-secondary">0</Text>
-                      </View>
+                      <TouchableOpacity className="flex-row items-center gap-1.5" onPress={() => router.push(`/comments?postId=${item.id}` as any)}>
+                          <Ionicons
+                            name="chatbubble-outline"
+                            size={16}
+                            color={theme.outline}
+                          />
+                          <Text className="text-xs text-secondary">{item.commentsCount || 0}</Text>
+                        </TouchableOpacity>
                     </View>
                     <Ionicons
                       name="bookmark-outline"

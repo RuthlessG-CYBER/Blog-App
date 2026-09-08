@@ -24,7 +24,7 @@ export const registerUser = async (data: any) => {
   const token = generateToken(user.id);
 
   return {
-    user: { id: user.id, name: user.name, email: user.email, bio: user.bio, profileImage: user.profileImage, postsCount: 0 },
+    user: { id: user.id, name: user.name, email: user.email, bio: user.bio, profileImage: user.profileImage, postsCount: 0, followersCount: 0, followingCount: 0 },
     token,
   };
 };
@@ -34,7 +34,7 @@ export const loginUser = async (data: any) => {
 
   const user = await prisma.user.findUnique({ 
     where: { email: email.toLowerCase() },
-    include: { _count: { select: { posts: true } } }
+    include: { _count: { select: { posts: true, followers: true, following: true } } }
   });
   if (!user) {
     throw { statusCode: 401, message: 'Invalid email or password' };
@@ -54,7 +54,7 @@ export const loginUser = async (data: any) => {
       email: user.email,
       bio: user.bio,
       profileImage: user.profileImage,
-      postsCount: user._count.posts 
+      postsCount: user._count.posts, followersCount: user._count.followers, followingCount: user._count.following 
     },
     token,
   };
@@ -65,7 +65,7 @@ export const getUserById = async (userId: string) => {
     where: { id: userId },
     include: {
       _count: {
-        select: { posts: true }
+        select: { posts: true, followers: true, following: true }
       }
     }
   });
@@ -80,7 +80,7 @@ export const getUserById = async (userId: string) => {
     email: user.email,
     bio: user.bio,
     profileImage: user.profileImage,
-    postsCount: user._count.posts,
+    postsCount: user._count.posts, followersCount: user._count.followers, followingCount: user._count.following,
   };
 };
 
@@ -97,7 +97,7 @@ export const updateProfile = async (userId: string, data: any) => {
     },
     include: {
       _count: {
-        select: { posts: true }
+        select: { posts: true, followers: true, following: true }
       }
     }
   });
@@ -108,6 +108,6 @@ export const updateProfile = async (userId: string, data: any) => {
     email: user.email,
     bio: user.bio,
     profileImage: user.profileImage,
-    postsCount: user._count.posts,
+    postsCount: user._count.posts, followersCount: user._count.followers, followingCount: user._count.following,
   };
 };

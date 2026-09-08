@@ -108,3 +108,34 @@ export const toggleLike = async (req: Request, res: Response, next: NextFunction
     next(error);
   }
 };
+
+export const createComment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const postId = req.params.id as string;
+    const { content } = req.body;
+    
+    if (!content) {
+      return res.status(400).json({ success: false, message: 'Content is required' });
+    }
+
+    // require dynamically as they were just appended and we might not have imported them
+    const { addComment } = require('../services/post.service');
+    const comment = await addComment(userId, postId, content);
+    
+    return successResponse(res, 201, 'Comment added successfully', comment);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPostComments = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const postId = req.params.id as string;
+    const { getComments } = require('../services/post.service');
+    const comments = await getComments(postId);
+    return successResponse(res, 200, 'Comments retrieved successfully', comments);
+  } catch (error) {
+    next(error);
+  }
+};

@@ -32,14 +32,29 @@ export default function NotificationsScreen() {
             <Text className="text-xl font-bold text-primary">{item.actor.name.charAt(0)}</Text>
           )}
         </View>
-        <View className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-error items-center justify-center border-2 border-surface">
-          <Ionicons name="heart" size={10} color={theme.white} />
-        </View>
+        {item.type === 'LIKE' && (
+          <View className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-error items-center justify-center border-2 border-surface">
+            <Ionicons name="heart" size={10} color={theme.white} />
+          </View>
+        )}
+        {item.type === 'COMMENT' && (
+          <View className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary items-center justify-center border-2 border-surface">
+            <Ionicons name="chatbubble" size={10} color={theme.white} />
+          </View>
+        )}
+        {item.type === 'follow' && (
+          <View className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-secondary items-center justify-center border-2 border-surface">
+            <Ionicons name="person-add" size={10} color={theme.white} />
+          </View>
+        )}
       </View>
       <View className="flex-1">
         <Text className="text-on-surface text-[15px] leading-relaxed">
-          <Text className="font-bold">{item.actor.name}</Text> liked your post 
-          {item.post ? <Text className="font-semibold text-primary"> &quot;{item.post.title}&quot;</Text> : ' (deleted post)'}
+          <Text className="font-bold">{item.actor.name}</Text>
+          {item.type === 'LIKE' && ' liked your post '}
+          {item.type === 'COMMENT' && ' commented on your post '}
+          {item.type === 'follow' && ' started following you'}
+          {(item.type === 'LIKE' || item.type === 'COMMENT') && (item.post ? <Text className="font-semibold text-primary"> &quot;{item.post.title}&quot;</Text> : ' (deleted post)')}
         </Text>
         <Text className="text-secondary text-xs mt-1">
           {new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} at {new Date(item.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}

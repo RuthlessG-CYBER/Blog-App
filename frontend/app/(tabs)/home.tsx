@@ -5,6 +5,8 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppDispatch, useAppSelector } from '../../src/store/hooks';
 import { fetchDiscoverPosts, toggleLikePost } from '../../src/store/slices/postSlice';
+import { toggleFollow } from '../../src/api';
+import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useNavigation } from 'expo-router';
 
@@ -17,6 +19,16 @@ export default function HomeScreen() {
   const { user } = useAppSelector((state) => state.auth);
 
   const flatListRef = useRef<FlatList>(null);
+
+  const handleFollow = async (targetUserId: string) => {
+    try {
+      await toggleFollow(targetUserId);
+      dispatch(fetchDiscoverPosts()); // Refresh discover feed to update follow status
+      Toast.show({ type: 'success', text1: 'Follow status updated' });
+    } catch (error) {
+      Toast.show({ type: 'error', text1: 'Failed to update follow status' });
+    }
+  };
   const lastTabPress = useRef(0);
 
   useEffect(() => {
@@ -63,9 +75,21 @@ export default function HomeScreen() {
               <Text className="text-secondary text-xs mt-0.5">{new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
             </View>
           </View>
-          <TouchableOpacity>
-            <Ionicons name="ellipsis-horizontal" size={16} color={theme.outlineVariant} />
-          </TouchableOpacity>
+          <View className="flex-row items-center gap-2">
+            {item.user?.id !== user?.id && (
+              <TouchableOpacity 
+                onPress={() => handleFollow(item.user.id)}
+                className={`px-3 py-1 rounded-full ${item.isFollowing ? 'bg-surface-container border border-outline-variant' : 'bg-primary'}`}
+              >
+                <Text className={`text-xs font-semibold ${item.isFollowing ? 'text-on-surface' : 'text-on-primary'}`}>
+                  {item.isFollowing ? 'Following' : 'Follow'}
+                </Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity>
+              <Ionicons name="ellipsis-horizontal" size={16} color={theme.outlineVariant} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <Text className="text-xl font-bold text-on-surface mb-2 tracking-tight">{item.title}</Text>
@@ -100,10 +124,10 @@ export default function HomeScreen() {
                 {item.likesCount || 0}
               </Text>
             </TouchableOpacity>
-            <View className="flex-row items-center gap-1.5">
+            <TouchableOpacity className="flex-row items-center gap-1.5" onPress={() => router.push(`/comments?postId=${item.id}` as any)}>
               <Ionicons name="chatbubble-outline" size={16} color={theme.outline} />
-              <Text className="text-xs text-secondary">3</Text>
-            </View>
+              <Text className="text-xs text-secondary">{item.commentsCount || 0}</Text>
+            </TouchableOpacity>
           </View>
           <Ionicons name="bookmark-outline" size={16} color={theme.outlineVariant} />
         </View>
