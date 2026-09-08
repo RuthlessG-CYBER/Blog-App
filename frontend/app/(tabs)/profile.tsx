@@ -184,13 +184,13 @@ export default function ProfileScreen() {
 
         {/* Segmented Tabs */}
         <View className="w-full bg-surface border-b border-surface-container">
-          <View className="flex-row items-center border-b border-surface-container-high px-margin-mobile gap-6">
-            <TouchableOpacity onPress={() => setActiveTab('Stories')} className={`py-space-sm border-b-2 ${activeTab === 'Stories' ? 'border-primary' : 'border-transparent'}`}>
+          <View className="flex-row items-center w-full">
+            <TouchableOpacity onPress={() => setActiveTab('Stories')} className={`flex-1 items-center py-space-sm border-b-2 ${activeTab === 'Stories' ? 'border-primary' : 'border-transparent'}`}>
               <Text className={`font-medium text-sm ${activeTab === 'Stories' ? 'text-primary' : 'text-secondary'}`}>
                 Stories ({user?.postsCount || 0})
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setActiveTab('Saved')} className={`py-space-sm border-b-2 ${activeTab === 'Saved' ? 'border-primary' : 'border-transparent'}`}>
+            <TouchableOpacity onPress={() => setActiveTab('Saved')} className={`flex-1 items-center py-space-sm border-b-2 ${activeTab === 'Saved' ? 'border-primary' : 'border-transparent'}`}>
               <Text className={`font-medium text-sm ${activeTab === 'Saved' ? 'text-primary' : 'text-secondary'}`}>
                 Saved ({savedPosts?.length || 0})
               </Text>
