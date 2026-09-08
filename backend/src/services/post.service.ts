@@ -97,19 +97,33 @@ export const getDiscoverPosts = async (userId: string, query: any) => {
   
   const skip = (Number(page) - 1) * Number(limit);
   const take = Math.min(Number(limit), 50);
-  const rn = Number(depth) + 1;
-
-  const rawPostIds = await prisma.$queryRaw<any[]>`
-    WITH RankedPosts AS (
-      SELECT id, "createdAt", ROW_NUMBER() OVER (PARTITION BY "userId" ORDER BY "createdAt" DESC) as rn
-      FROM "Post"
-      WHERE "userId" != ${userId}
-    )
-    SELECT id FROM RankedPosts
-    WHERE rn = ${rn}
-    ORDER BY "createdAt" DESC
-    LIMIT ${take} OFFSET ${skip}
-  `;
+  
+  let rawPostIds;
+  if (Number(depth) === 0) {
+    rawPostIds = await prisma.$queryRaw<any[]>`
+      WITH RankedPosts AS (
+        SELECT id, "createdAt", ROW_NUMBER() OVER (PARTITION BY "userId" ORDER BY "createdAt" DESC) as rn
+        FROM "Post"
+        WHERE "userId" != ${userId}
+      )
+      SELECT id FROM RankedPosts
+      WHERE rn = 1
+      ORDER BY "createdAt" DESC
+      LIMIT ${take} OFFSET ${skip}
+    `;
+  } else {
+    rawPostIds = await prisma.$queryRaw<any[]>`
+      WITH RankedPosts AS (
+        SELECT id, "createdAt", ROW_NUMBER() OVER (PARTITION BY "userId" ORDER BY RANDOM()) as rn
+        FROM "Post"
+        WHERE "userId" != ${userId}
+      )
+      SELECT id FROM RankedPosts
+      WHERE rn = 1
+      ORDER BY "createdAt" DESC
+      LIMIT ${take} OFFSET ${skip}
+    `;
+  }
 
   const postIds = rawPostIds.map(p => p.id);
 
@@ -119,7 +133,7 @@ export const getDiscoverPosts = async (userId: string, query: any) => {
       FROM "Post"
       WHERE "userId" != ${userId}
     )
-    SELECT CAST(COUNT(*) AS INTEGER) as count FROM RankedPosts WHERE rn = ${rn}
+    SELECT CAST(COUNT(*) AS INTEGER) as count FROM RankedPosts WHERE rn = 1
   `;
   const total = totalRaw[0]?.count || 0;
 
@@ -165,8 +179,7 @@ export const getFollowingPosts = async (userId: string, query: any) => {
   
   const skip = (Number(page) - 1) * Number(limit);
   const take = Math.min(Number(limit), 50);
-  const rn = Number(depth) + 1;
-
+  
   const following = await prisma.follow.findMany({
     where: { followerId: userId }
   });
@@ -176,17 +189,32 @@ export const getFollowingPosts = async (userId: string, query: any) => {
     return { posts: [], pagination: { page: Number(page), limit: take, total: 0, totalPages: 0 } };
   }
 
-  const rawPostIds = await prisma.$queryRaw<any[]>`
-    WITH RankedPosts AS (
-      SELECT id, "createdAt", ROW_NUMBER() OVER (PARTITION BY "userId" ORDER BY "createdAt" DESC) as rn
-      FROM "Post"
-      WHERE "userId" = ANY(ARRAY[${Prisma.join(followingIds)}]::uuid[])
-    )
-    SELECT id FROM RankedPosts
-    WHERE rn = ${rn}
-    ORDER BY "createdAt" DESC
-    LIMIT ${take} OFFSET ${skip}
-  `;
+  let rawPostIds;
+  if (Number(depth) === 0) {
+    rawPostIds = await prisma.$queryRaw<any[]>`
+      WITH RankedPosts AS (
+        SELECT id, "createdAt", ROW_NUMBER() OVER (PARTITION BY "userId" ORDER BY "createdAt" DESC) as rn
+        FROM "Post"
+        WHERE "userId" = ANY(ARRAY[${Prisma.join(followingIds)}]::uuid[])
+      )
+      SELECT id FROM RankedPosts
+      WHERE rn = 1
+      ORDER BY "createdAt" DESC
+      LIMIT ${take} OFFSET ${skip}
+    `;
+  } else {
+    rawPostIds = await prisma.$queryRaw<any[]>`
+      WITH RankedPosts AS (
+        SELECT id, "createdAt", ROW_NUMBER() OVER (PARTITION BY "userId" ORDER BY RANDOM()) as rn
+        FROM "Post"
+        WHERE "userId" = ANY(ARRAY[${Prisma.join(followingIds)}]::uuid[])
+      )
+      SELECT id FROM RankedPosts
+      WHERE rn = 1
+      ORDER BY "createdAt" DESC
+      LIMIT ${take} OFFSET ${skip}
+    `;
+  }
 
   const postIds = rawPostIds.map(p => p.id);
 
@@ -196,7 +224,7 @@ export const getFollowingPosts = async (userId: string, query: any) => {
       FROM "Post"
       WHERE "userId" = ANY(ARRAY[${Prisma.join(followingIds)}]::uuid[])
     )
-    SELECT CAST(COUNT(*) AS INTEGER) as count FROM RankedPosts WHERE rn = ${rn}
+    SELECT CAST(COUNT(*) AS INTEGER) as count FROM RankedPosts WHERE rn = 1
   `;
   const total = totalRaw[0]?.count || 0;
 
