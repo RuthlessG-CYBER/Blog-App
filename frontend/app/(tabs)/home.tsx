@@ -54,9 +54,10 @@ export default function HomeScreen() {
     }
   };
   const lastTabPress = useRef(0);
-  const [activeTab, setActiveTab] = useState<
-    "Discover" | "Following" | "Routine"
-  >("Discover");
+  const [activeTab, setActiveTab] = useState<"Discover" | "Following" | "Routine">("Discover");
+  const [discoverDepth, setDiscoverDepth] = useState(0);
+  const [followingDepth, setFollowingDepth] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("tabPress" as any, (e: any) => {
