@@ -90,7 +90,7 @@ export default function EditProfileScreen() {
             <TouchableOpacity onPress={handlePickImage} className="relative active:scale-95 transition-transform">
               <View className="w-24 h-24 rounded-full bg-surface-container-high items-center justify-center overflow-hidden border-2 border-surface-container shadow-sm">
                 {displayImage ? (
-                  <Image source={{ uri: displayImage }} className="w-full h-full" contentFit="cover" />
+                  <Image source={{ uri: displayImage }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} />
                 ) : (
                   <Text className="text-4xl text-primary font-bold">{user?.name?.charAt(0) || 'U'}</Text>
                 )}
