@@ -4,7 +4,7 @@ import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppDispatch, useAppSelector } from '../../src/store/hooks';
-import { fetchDiscoverPosts, toggleLikePost, updateFollowState } from '../../src/store/slices/postSlice';
+import { fetchPosts, fetchDiscoverPosts, fetchFollowingPosts, toggleLikePost, updateFollowState } from '../../src/store/slices/postSlice';
 import { toggleFollow } from '../../src/api';
 import { fetchMe } from '../../src/store/slices/authSlice';
 import Toast from 'react-native-toast-message';
@@ -16,7 +16,7 @@ export default function HomeScreen() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const navigation = useNavigation();
-  const { discoverPosts, loading } = useAppSelector((state) => state.posts);
+  const { posts, discoverPosts, followingPosts, loading } = useAppSelector((state) => state.posts);
   const { user } = useAppSelector((state) => state.auth);
 
   const flatListRef = useRef<FlatList>(null);
@@ -34,20 +34,21 @@ export default function HomeScreen() {
     }
   };
   const lastTabPress = useRef(0);
+  const [activeTab, setActiveTab] = useState<'Following' | 'Discover' | 'Routine'>('Discover');
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('tabPress' as any, (e: any) => {
       const now = Date.now();
       if (now - lastTabPress.current < 400) {
         // Double tap detected!
-        dispatch(fetchDiscoverPosts());
+        fetchDataForTab(activeTab);
         flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
       }
       lastTabPress.current = now;
     });
 
     return unsubscribe;
-  }, [navigation, dispatch]);
+  }, [navigation, dispatch, activeTab]);
 
 
 
@@ -90,9 +91,6 @@ export default function HomeScreen() {
                 </Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity>
-              <Ionicons name="ellipsis-horizontal" size={16} color={theme.outlineVariant} />
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -139,33 +137,56 @@ export default function HomeScreen() {
     </View>
   );
 
-  const renderHeader = () => (
+    const renderHeader = () => (
     <View className="pt-space-md pb-space-sm">
       <View className="px-margin-mobile flex-row items-center justify-between mb-space-sm">
         <Text className="text-xs uppercase tracking-wider text-secondary font-semibold">Chronicle Stream</Text>
       </View>
       
       <View className="px-margin-mobile flex-row items-center gap-space-xs mb-space-sm pb-1 overflow-visible">
-        <TouchableOpacity className="flex-row items-center gap-1 px-3.5 py-1.5 rounded-full bg-surface-container-low">
-          <Text className="text-secondary font-medium text-sm">Following</Text>
+        <TouchableOpacity 
+          onPress={() => setActiveTab('Following')}
+          className={`flex-row items-center gap-1.5 px-3.5 py-1.5 rounded-full ${activeTab === 'Following' ? 'bg-primary shadow-sm' : 'bg-surface-container-low'}`}
+        >
+          {activeTab === 'Following' && <View className="w-1.5 h-1.5 rounded-full bg-primary-fixed" />}
+          <Text className={`font-medium text-sm ${activeTab === 'Following' ? 'text-on-primary' : 'text-secondary'}`}>Following</Text>
         </TouchableOpacity>
-        <TouchableOpacity className="flex-row items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary shadow-sm">
-          <View className="w-1.5 h-1.5 rounded-full bg-primary-fixed" />
-          <Text className="text-on-primary font-medium text-sm">Discover</Text>
+        <TouchableOpacity 
+          onPress={() => setActiveTab('Discover')}
+          className={`flex-row items-center gap-1.5 px-3.5 py-1.5 rounded-full ${activeTab === 'Discover' ? 'bg-primary shadow-sm' : 'bg-surface-container-low'}`}
+        >
+          {activeTab === 'Discover' && <View className="w-1.5 h-1.5 rounded-full bg-primary-fixed" />}
+          <Text className={`font-medium text-sm ${activeTab === 'Discover' ? 'text-on-primary' : 'text-secondary'}`}>Discover</Text>
         </TouchableOpacity>
-        <TouchableOpacity className="flex-row items-center gap-1 px-3.5 py-1.5 rounded-full bg-surface-container-low">
-          <Text className="text-secondary font-medium text-sm">Routine</Text>
+        <TouchableOpacity 
+          onPress={() => setActiveTab('Routine')}
+          className={`flex-row items-center gap-1.5 px-3.5 py-1.5 rounded-full ${activeTab === 'Routine' ? 'bg-primary shadow-sm' : 'bg-surface-container-low'}`}
+        >
+          {activeTab === 'Routine' && <View className="w-1.5 h-1.5 rounded-full bg-primary-fixed" />}
+          <Text className={`font-medium text-sm ${activeTab === 'Routine' ? 'text-on-primary' : 'text-secondary'}`}>Routine</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 
   const [isInitialDelay, setIsInitialDelay] = useState(true);
+  
+  const fetchDataForTab = (tab: string) => {
+    if (tab === 'Discover') dispatch(fetchDiscoverPosts());
+    else if (tab === 'Following') dispatch(fetchFollowingPosts());
+    else if (tab === 'Routine') dispatch(fetchPosts());
+  };
+
+  useEffect(() => {
+    if (!isInitialDelay) {
+      fetchDataForTab(activeTab);
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     // Wait 3 seconds before making the initial fetch to reduce server load
     const timer = setTimeout(() => {
-      dispatch(fetchDiscoverPosts());
+      fetchDataForTab(activeTab);
       setIsInitialDelay(false);
     }, 3000);
 
@@ -227,7 +248,7 @@ export default function HomeScreen() {
 
       <FlatList
         ref={flatListRef}
-        data={showSkeleton ? [1, 2, 3] : discoverPosts}
+        data={showSkeleton ? [1, 2, 3] : (activeTab === 'Discover' ? discoverPosts : (activeTab === 'Following' ? followingPosts : posts))}
         keyExtractor={(item) => (showSkeleton ? item.toString() : item.id)}
         renderItem={showSkeleton ? renderSkeleton : renderItem}
         ListHeaderComponent={renderHeader}

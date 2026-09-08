@@ -24,6 +24,7 @@ router.use(authMiddleware);
 
 router.post("/", validate(createPostSchema), create);
 router.get("/feed/discover", getDiscover);
+router.get("/feed/following", require("../controllers/post.controller").getFollowingFeed);
 router.get("/", getAll);
 router.get("/:id", getSingle);
 router.put("/:id", validate(updatePostSchema), update);

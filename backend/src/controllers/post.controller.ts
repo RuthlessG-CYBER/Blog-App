@@ -33,6 +33,17 @@ export const getDiscover = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
+export const getFollowingFeed = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const { getFollowingPosts } = require('../services/post.service');
+    const data = await getFollowingPosts(userId, req.query);
+    return successResponse(res, 200, 'Following posts retrieved successfully', data.posts, data.pagination);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getSingle = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.userId;

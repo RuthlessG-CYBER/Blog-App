@@ -13,6 +13,18 @@ export const fetchPosts = createAsyncThunk(
   }
 );
 
+export const fetchFollowingPosts = createAsyncThunk(
+  'posts/fetchFollowingPosts',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/posts/feed/following');
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 export const fetchDiscoverPosts = createAsyncThunk(
   'posts/fetchDiscoverPosts',
   async (_, { rejectWithValue }) => {
@@ -101,6 +113,7 @@ const postSlice = createSlice({
   initialState: {
     posts: [],
     discoverPosts: [],
+    followingPosts: [],
     loading: false,
     error: null,
   },
@@ -108,6 +121,11 @@ const postSlice = createSlice({
     updateFollowState: (state, action) => {
       const { targetUserId, isFollowing } = action.payload;
       state.discoverPosts.forEach((post: any) => {
+        if (post.user?.id === targetUserId) {
+          post.isFollowing = isFollowing;
+        }
+      });
+      state.followingPosts.forEach((post: any) => {
         if (post.user?.id === targetUserId) {
           post.isFollowing = isFollowing;
         }
@@ -124,6 +142,17 @@ const postSlice = createSlice({
         state.posts = action.payload;
       })
       .addCase(fetchPosts.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as any;
+      })
+      .addCase(fetchFollowingPosts.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchFollowingPosts.fulfilled, (state, action) => {
+        state.loading = false;
+        state.followingPosts = action.payload;
+      })
+      .addCase(fetchFollowingPosts.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as any;
       })
@@ -153,6 +182,10 @@ const postSlice = createSlice({
           state.posts[index] = action.payload as never;
         }
         const discoverIndex = state.discoverPosts.findIndex((p: any) => p.id === action.payload.id);
+        const followingIndex = state.followingPosts.findIndex((p: any) => p.id === action.payload.id);
+        if (followingIndex !== -1) {
+          state.followingPosts[followingIndex] = action.payload as never;
+        }
         if (discoverIndex !== -1) {
           state.discoverPosts[discoverIndex] = action.payload as never;
         }
@@ -172,6 +205,12 @@ const postSlice = createSlice({
         }
 
         const discoverIndex = state.discoverPosts.findIndex((p: any) => p.id === postId);
+        const followingIndex = state.followingPosts.findIndex((p: any) => p.id === postId);
+        if (followingIndex !== -1) {
+          const post = state.followingPosts[followingIndex] as any;
+          post.isLiked = isLiked;
+          post.likesCount = isLiked ? (post.likesCount || 0) + 1 : Math.max((post.likesCount || 0) - 1, 0);
+        }
         if (discoverIndex !== -1) {
           const post = state.discoverPosts[discoverIndex] as any;
           post.isLiked = isLiked;
