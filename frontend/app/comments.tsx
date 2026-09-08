@@ -42,7 +42,6 @@ export default function CommentsScreen() {
       const res = await addComment(postId as string, content.trim());
       setComments([res.data.data, ...comments]);
       setContent('');
-      Toast.show({ type: 'success', text1: 'Comment added' });
     } catch (error) {
       Toast.show({ type: 'error', text1: 'Failed to add comment' });
     } finally {
