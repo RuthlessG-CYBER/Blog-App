@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppDispatch, useAppSelector } from '../../src/store/hooks';
 import { fetchDiscoverPosts, toggleLikePost } from '../../src/store/slices/postSlice';
 import { toggleFollow } from '../../src/api';
+import { fetchMe } from '../../src/store/slices/authSlice';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useNavigation } from 'expo-router';
@@ -24,6 +25,7 @@ export default function HomeScreen() {
     try {
       await toggleFollow(targetUserId);
       dispatch(fetchDiscoverPosts()); // Refresh discover feed to update follow status
+      dispatch(fetchMe()); // Refresh user profile to update following count
       Toast.show({ type: 'success', text1: 'Follow status updated' });
     } catch (error) {
       Toast.show({ type: 'error', text1: 'Failed to update follow status' });
@@ -159,11 +161,11 @@ export default function HomeScreen() {
   const [isInitialDelay, setIsInitialDelay] = useState(true);
 
   useEffect(() => {
-    // Wait 5 seconds before making the initial fetch to reduce server load
+    // Wait 3 seconds before making the initial fetch to reduce server load
     const timer = setTimeout(() => {
       dispatch(fetchDiscoverPosts());
       setIsInitialDelay(false);
-    }, 5000);
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, [dispatch]);

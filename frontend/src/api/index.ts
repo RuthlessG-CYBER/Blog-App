@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 // Adjust for production URL or local IP if running on physical device
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://blog-app-ypal.onrender.com/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.106:4040/api';
 
 const api = axios.create({
   baseURL: API_URL,
