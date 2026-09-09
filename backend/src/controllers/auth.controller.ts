@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { registerUser, loginUser, getUserById, updateProfile } from '../services/auth.service';
+import { registerUser, loginUser, getUserById, updateProfile, googleAuth } from '../services/auth.service';
 import { uploadImage } from '../services/cloudinary.service';
 import { successResponse } from '../utils/response';
 
@@ -58,6 +58,19 @@ export const updateProfileController = async (req: Request, res: Response, next:
 
     const updatedUser = await updateProfile(userId, profileData);
     return successResponse(res, 200, 'Profile updated successfully', updatedUser);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const googleLogin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ success: false, message: 'Token is required' });
+    }
+    const data = await googleAuth(token);
+    return successResponse(res, 200, 'Google login successful', data);
   } catch (error) {
     next(error);
   }

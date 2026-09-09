@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { TouchableOpacity } from 'react-native';
 import { useTheme } from '../../src/utils/theme';
 
 export default function TabLayout() {
@@ -15,7 +16,8 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: theme.background,
           borderTopColor: theme.surfaceContainer
-        }
+        },
+        tabBarButton: (props) => <TouchableOpacity {...props as any} activeOpacity={0.8} />
     }}>
       <Tabs.Screen
         name="home"

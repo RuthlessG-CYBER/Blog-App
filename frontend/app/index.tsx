@@ -5,7 +5,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useAppSelector } from "../src/store/hooks";
-import { Ionicons } from "@expo/vector-icons";
 
 export default function SplashScreenComponent() {
   const theme = useTheme();
@@ -73,7 +72,7 @@ export default function SplashScreenComponent() {
           <View className="w-28 h-28 rounded-[32px] bg-surface-container-highest shadow-lg flex items-center justify-center p-1 mb-6 relative overflow-visible">
             <View className="w-full h-full rounded-[28px] overflow-hidden">
               <Image 
-                source="https://lh3.googleusercontent.com/aida/AEtjO1U7I2Vc5W_R7nT96qth7L8pnfB21P4biOWJ4NFp6uh3u8OB2K-jpHApz8zmy2ARUyoiOyBTBMcmu79858ZtUxqEIxMaytTfqlBBIwuTbSReNkc3Cm0EjqdJlAu1clt_QU1M3J9G9mHpbL9hO-RXootdZfskK9PICwAmanQ-NAHHII7c2zNkIsfPK8FPsIgbv-WOBFZbdG_rVLoxmjP7VZqxfmQLlLDTpEn3LAcuUl6vIieajj01WekoiA"
+                source={require('@/assets/images/icon.png')}
                 style={{ width: "100%", height: "100%" }}
                 contentFit="cover"
               />

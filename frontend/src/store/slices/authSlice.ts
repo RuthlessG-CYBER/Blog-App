@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../api';
 import * as SecureStore from 'expo-secure-store';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export const loginUser = createAsyncThunk(
   'auth/login',
@@ -45,6 +46,14 @@ export const logoutUser = createAsyncThunk(
   'auth/logout',
   async () => {
     await SecureStore.deleteItemAsync('token');
+    try {
+      GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID',
+      });
+      await GoogleSignin.signOut();
+    } catch (e) {
+      // Ignore error if not signed in
+    }
   }
 );
 

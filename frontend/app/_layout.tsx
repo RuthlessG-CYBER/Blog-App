@@ -150,7 +150,7 @@ export default function RootLayout() {
     success: (props: any) => (
       <BaseToast
         {...props}
-        style={{ borderLeftColor: theme.primary, backgroundColor: theme.surfaceContainerHighest }}
+        style={{ borderLeftColor: theme.primary, backgroundColor: theme.surfaceContainer }}
         contentContainerStyle={{ paddingHorizontal: 15 }}
         text1Style={{
           fontSize: 15,
@@ -160,14 +160,14 @@ export default function RootLayout() {
         text2Style={{
           fontSize: 13,
           fontFamily: 'Saira_500Medium',
-          color: theme.onSurfaceVariant
+          color: theme.secondary
         }}
       />
     ),
     error: (props: any) => (
       <ErrorToast
         {...props}
-        style={{ borderLeftColor: theme.error, backgroundColor: theme.surfaceContainerHighest }}
+        style={{ borderLeftColor: theme.error, backgroundColor: theme.surfaceContainer }}
         contentContainerStyle={{ paddingHorizontal: 15 }}
         text1Style={{
           fontSize: 15,
@@ -177,7 +177,7 @@ export default function RootLayout() {
         text2Style={{
           fontSize: 13,
           fontFamily: 'Saira_500Medium',
-          color: theme.onSurfaceVariant
+          color: theme.secondary
         }}
       />
     )

@@ -179,7 +179,7 @@ export const getDiscoverPosts = async (userId: string, query: any) => {
   };
 };
 export const getFollowingPosts = async (userId: string, query: any) => {
-  const { page = 1, limit = 10, depth = 0 } = query;
+  const { page = 1, limit = 10 } = query;
   
   const skip = (Number(page) - 1) * Number(limit);
   const take = Math.min(Number(limit), 50);
@@ -188,53 +188,19 @@ export const getFollowingPosts = async (userId: string, query: any) => {
     where: { followerId: userId }
   });
   const followingIds = following.map(f => f.followingId);
+  followingIds.push(userId);
 
-  if (followingIds.length === 0) {
-    return { posts: [], pagination: { page: Number(page), limit: take, total: 0, totalPages: 0 } };
-  }
+  
 
-  let rawPostIds;
-  if (Number(depth) === 0) {
-    rawPostIds = await prisma.$queryRaw<any[]>`
-      WITH RankedPosts AS (
-        SELECT id, "createdAt", ROW_NUMBER() OVER (PARTITION BY "userId" ORDER BY "createdAt" DESC) as rn
-        FROM "Post"
-        WHERE "userId" = ANY(ARRAY[${Prisma.join(followingIds)}]::uuid[])
-      )
-      SELECT id FROM RankedPosts
-      WHERE rn = 1
-      ORDER BY "createdAt" DESC
-      LIMIT ${take} OFFSET ${skip}
-    `;
-  } else {
-    rawPostIds = await prisma.$queryRaw<any[]>`
-      WITH RankedPosts AS (
-        SELECT id, "createdAt", ROW_NUMBER() OVER (PARTITION BY "userId" ORDER BY RANDOM()) as rn
-        FROM "Post"
-        WHERE "userId" = ANY(ARRAY[${Prisma.join(followingIds)}]::uuid[])
-      )
-      SELECT id FROM RankedPosts
-      WHERE rn = 1
-      ORDER BY "createdAt" DESC
-      LIMIT ${take} OFFSET ${skip}
-    `;
-  }
-
-  const postIds = rawPostIds.map(p => p.id);
-
-  const totalRaw = await prisma.$queryRaw<any[]>`
-    WITH RankedPosts AS (
-      SELECT id, ROW_NUMBER() OVER (PARTITION BY "userId" ORDER BY "createdAt" DESC) as rn
-      FROM "Post"
-      WHERE "userId" = ANY(ARRAY[${Prisma.join(followingIds)}]::uuid[])
-    )
-    SELECT CAST(COUNT(*) AS INTEGER) as count FROM RankedPosts WHERE rn = 1
-  `;
-  const total = totalRaw[0]?.count || 0;
+  const total = await prisma.post.count({
+    where: { userId: { in: followingIds } }
+  });
 
   const posts = await prisma.post.findMany({
-    where: { id: { in: postIds } },
+    where: { userId: { in: followingIds } },
     orderBy: { createdAt: 'desc' },
+    skip,
+    take,
     include: {
       user: { select: { id: true, name: true, email: true, profileImage: true } },
       _count: { select: { likes: true, comments: true } },
@@ -243,12 +209,12 @@ export const getFollowingPosts = async (userId: string, query: any) => {
     }
   });
 
-  const formattedPosts = postIds.map(id => {
-    const post = posts.find(p => p.id === id)!;
+  const formattedPosts = posts.map(post => {
     return {
       isFollowing: true,
       ...post,
-      likesCount: post._count.likes, commentsCount: post._count.comments,
+      likesCount: post._count.likes,
+      commentsCount: post._count.comments,
       isLiked: post.likes.length > 0,
       isSaved: post.savedBy?.length > 0,
       likes: undefined,

@@ -1,3 +1,7 @@
+import { OAuth2Client } from 'google-auth-library';
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 import bcrypt from 'bcrypt';
 import prisma from '../config/database';
 import { generateToken } from '../utils/jwt';
@@ -40,6 +44,7 @@ export const loginUser = async (data: any) => {
     throw { statusCode: 401, message: 'Invalid email or password' };
   }
 
+  if (!user.passwordHash) { throw { statusCode: 401, message: 'Please login with Google' }; }
   const isMatch = await bcrypt.compare(password, user.passwordHash);
   if (!isMatch) {
     throw { statusCode: 401, message: 'Invalid email or password' };
@@ -109,5 +114,59 @@ export const updateProfile = async (userId: string, data: any) => {
     bio: user.bio,
     profileImage: user.profileImage,
     postsCount: user._count.posts, followersCount: user._count.followers, followingCount: user._count.following,
+  };
+};
+
+export const googleAuth = async (idToken: string) => {
+  const ticket = await client.verifyIdToken({
+    idToken,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+  const payload = ticket.getPayload();
+  
+  if (!payload || !payload.email) {
+    throw { statusCode: 400, message: 'Invalid Google Token' };
+  }
+
+  const email = payload.email.toLowerCase();
+  const googleId = payload.sub;
+  const name = payload.name || 'Unknown User';
+  const profileImage = payload.picture;
+
+  let user = await prisma.user.findUnique({
+    where: { email },
+    include: { _count: { select: { posts: true, followers: true, following: true } } }
+  });
+
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email,
+        name,
+        googleId,
+        profileImage,
+      },
+      include: { _count: { select: { posts: true, followers: true, following: true } } }
+    });
+  } else if (!user.googleId) {
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { googleId, profileImage: user.profileImage || profileImage },
+      include: { _count: { select: { posts: true, followers: true, following: true } } }
+    });
+  }
+
+  const token = generateToken(user.id);
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      bio: user.bio,
+      profileImage: user.profileImage,
+      postsCount: user._count.posts, followersCount: user._count.followers, followingCount: user._count.following
+    },
+    token
   };
 };

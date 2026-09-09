@@ -13,7 +13,6 @@ import {
 } from "../../src/store/slices/postSlice";
 import { toggleFollow } from "../../src/api";
 import { fetchMe } from "../../src/store/slices/authSlice";
-import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useNavigation } from "expo-router";
 
@@ -54,7 +53,7 @@ export default function HomeScreen() {
     }
   };
   const lastTabPress = useRef(0);
-  const [activeTab, setActiveTab] = useState<"Discover" | "Following" | "Routine">("Discover");
+  const [activeTab, setActiveTab] = useState<"Discover" | "Following">("Discover");
   const [discoverDepth, setDiscoverDepth] = useState(0);
   const [followingDepth, setFollowingDepth] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -81,8 +80,6 @@ export default function HomeScreen() {
               await dispatch(fetchFollowingPosts(newDepth) as any);
             }
             setFollowingDepth(newDepth);
-          } else {
-            await dispatch(fetchPosts() as any);
           }
           flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
         };
@@ -250,19 +247,7 @@ export default function HomeScreen() {
             Following
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setActiveTab("Routine")}
-          className={`flex-row items-center gap-1.5 px-3.5 py-1.5 rounded-full ${activeTab === "Routine" ? "bg-primary shadow-sm" : "bg-surface-container-low"}`}
-        >
-          {activeTab === "Routine" && (
-            <View className="w-1.5 h-1.5 rounded-full bg-primary-fixed" />
-          )}
-          <Text
-            className={`font-medium text-sm ${activeTab === "Routine" ? "text-on-primary" : "text-secondary"}`}
-          >
-            Routine
-          </Text>
-        </TouchableOpacity>
+
       </View>
     </View>
   );
@@ -287,8 +272,6 @@ export default function HomeScreen() {
         await dispatch(fetchFollowingPosts(newDepth) as any);
       }
       setFollowingDepth(newDepth);
-    } else {
-      await dispatch(fetchPosts() as any);
     }
     setRefreshing(false);
   };
@@ -296,7 +279,7 @@ export default function HomeScreen() {
   const fetchDataForTab = (tab: string, forceDepth?: number) => {
     if (tab === 'Discover') dispatch(fetchDiscoverPosts(forceDepth ?? discoverDepth) as any);
     else if (tab === 'Following') dispatch(fetchFollowingPosts(forceDepth ?? followingDepth) as any);
-    else if (tab === 'Routine') dispatch(fetchPosts());
+    
   };
 
   useEffect(() => {
@@ -382,9 +365,7 @@ export default function HomeScreen() {
             ? [1, 2, 3]
             : activeTab === "Discover"
               ? discoverPosts
-              : activeTab === "Following"
-                ? followingPosts
-                : posts
+              : followingPosts
         }
         keyExtractor={(item) => (showSkeleton ? item.toString() : item.id)}
         renderItem={showSkeleton ? renderSkeleton : renderItem}

@@ -10,11 +10,18 @@ import { loginUser, setCredentials } from '../../src/store/slices/authSlice';
 import api from '../../src/api';
 import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 export default function LoginScreen() {
   const theme = useTheme();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  React.useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID',
+    });
+  }, []);
+
   const { loading, error } = useAppSelector((state) => state.auth);
 
   const [email, setEmail] = useState('');
@@ -25,6 +32,42 @@ export default function LoginScreen() {
   const [loginStatus, setLoginStatus] = useState<'idle' | 'logging_in' | 'success'>('idle');
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  
+  const handleGoogleLogin = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = userInfo.data?.idToken;
+      
+      if (!idToken) {
+         throw new Error('No ID token found');
+      }
+
+      setLoginStatus('logging_in');
+      const response = await api.post('/auth/google', { token: idToken });
+      await SecureStore.setItemAsync('token', response.data.data.token);
+      
+      setLoginStatus('success');
+      setTimeout(async () => {
+        setLoginStatus('idle');
+        dispatch(setCredentials(response.data.data));
+      }, 1000);
+
+    } catch (error: any) {
+      setLoginStatus('idle');
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled the login flow
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        // operation (e.g. sign in) is in progress already
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        // play services not available or outdated
+        Toast.show({ type: 'error', text1: 'Error', text2: 'Play services not available' });
+      } else {
+        Toast.show({ type: 'error', text1: 'Google Login Failed', text2: error.message || 'Something went wrong' });
+      }
+    }
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -176,10 +219,10 @@ export default function LoginScreen() {
 
           <View className="flex-col gap-3 mb-6">
             <TouchableOpacity className="w-full h-14 rounded-xl bg-on-surface flex-row items-center justify-center gap-2 shadow-sm">
-              <Ionicons name="logo-apple" size={18} color={theme.surface} />
+              <Ionicons name="logo-apple" size={18} color={theme.background} />
               <Text className="font-sans text-surface text-[15px] font-bold">Continue with Apple</Text>
             </TouchableOpacity>
-            <TouchableOpacity className="w-full h-14 rounded-xl bg-surface-container-highest border border-outline-variant flex-row items-center justify-center gap-2 shadow-sm">
+            <TouchableOpacity onPress={handleGoogleLogin} className="w-full h-14 rounded-xl bg-surface-container-highest border border-outline-variant flex-row items-center justify-center gap-2 shadow-sm">
               <Ionicons name="logo-google" size={18} color={theme.onSurface} />
               <Text className="font-sans text-on-surface text-[15px] font-bold">Continue with Google</Text>
             </TouchableOpacity>

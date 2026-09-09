@@ -10,11 +10,18 @@ import api from '../../src/api';
 import * as SecureStore from 'expo-secure-store';
 import { BlurView } from 'expo-blur';
 import Toast from 'react-native-toast-message';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 export default function SignupScreen() {
   const theme = useTheme();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  React.useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID',
+    });
+  }, []);
+
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -50,6 +57,42 @@ export default function SignupScreen() {
     strengthBgClass = 'bg-primary/20 border border-primary/30';
     strengthTextClass = 'text-primary';
   }
+
+  
+  const handleGoogleSignup = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = userInfo.data?.idToken;
+      
+      if (!idToken) {
+         throw new Error('No ID token found');
+      }
+
+      setSignupStatus('creating');
+      const response = await api.post('/auth/google', { token: idToken });
+      await SecureStore.setItemAsync('token', response.data.data.token);
+      
+      setSignupStatus('success');
+      setTimeout(async () => {
+        setSignupStatus('idle');
+        dispatch(setCredentials(response.data.data));
+      }, 1000);
+
+    } catch (error: any) {
+      setSignupStatus('idle');
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled the login flow
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        // operation (e.g. sign in) is in progress already
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        // play services not available or outdated
+        Toast.show({ type: 'error', text1: 'Error', text2: 'Play services not available' });
+      } else {
+        Toast.show({ type: 'error', text1: 'Google Signup Failed', text2: error.message || 'Something went wrong' });
+      }
+    }
+  };
 
   const handleSignup = async () => {
     if (!name || !email || !password) {
@@ -265,7 +308,7 @@ export default function SignupScreen() {
               <Ionicons name="logo-apple" size={18} color={theme.onSurface} />
               <Text className="text-on-surface font-medium text-[15px]">Apple</Text>
             </TouchableOpacity>
-            <TouchableOpacity className="flex-1 h-14 rounded-xl bg-surface-container-highest border border-outline-variant flex-row items-center justify-center gap-2 shadow-sm">
+            <TouchableOpacity onPress={handleGoogleSignup} className="flex-1 h-14 rounded-xl bg-surface-container-highest border border-outline-variant flex-row items-center justify-center gap-2 shadow-sm">
               <Ionicons name="logo-google" size={18} color={theme.onSurface} />
               <Text className="text-on-surface font-medium text-[15px]">Google</Text>
             </TouchableOpacity>

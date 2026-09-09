@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useTheme } from '../src/utils/theme';
@@ -11,6 +11,7 @@ import { useAppSelector } from '../src/store/hooks';
 export default function CommentsScreen() {
   const { postId } = useLocalSearchParams();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [comments, setComments] = useState<any[]>([]);
   const [content, setContent] = useState('');
@@ -69,29 +70,34 @@ export default function CommentsScreen() {
     </View>
   );
 
+  
   return (
-    <SafeAreaView className="flex-1 bg-surface" edges={['top', 'bottom']}>
-      <View className="h-14 px-margin-mobile flex-row items-center border-b border-surface-container">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
-          <Ionicons name="arrow-back" size={24} color={theme.onSurface} />
-        </TouchableOpacity>
-        <Text className="text-lg font-bold text-on-surface">Comments</Text>
-      </View>
-      
-      {loading ? (
-        <View className="flex-1 items-center justify-center"><ActivityIndicator color={theme.primary} /></View>
-      ) : (
-        <FlatList
-          data={comments}
-          keyExtractor={(item) => item.id}
-          renderItem={renderComment}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          ListEmptyComponent={<Text className="text-center text-secondary mt-10">No comments yet. Be the first!</Text>}
-        />
-      )}
+    <SafeAreaView className="flex-1 bg-surface" edges={['top']}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior="padding" keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 25}
+      >
+        <View className="h-14 px-margin-mobile flex-row items-center border-b border-surface-container">
+          <TouchableOpacity onPress={() => router.back()} className="mr-4">
+            <Ionicons name="arrow-back" size={24} color={theme.onSurface} />
+          </TouchableOpacity>
+          <Text className="text-lg font-bold text-on-surface">Comments</Text>
+        </View>
+        
+        {loading ? (
+          <View className="flex-1 items-center justify-center"><ActivityIndicator color={theme.primary} /></View>
+        ) : (
+          <FlatList
+            style={{ flex: 1 }}
+            data={comments}
+            keyExtractor={(item) => item.id}
+            renderItem={renderComment}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            ListEmptyComponent={<Text className="text-center text-secondary mt-10">No comments yet. Be the first!</Text>}
+          />
+        )}
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View className="p-margin-mobile border-t border-surface-container flex-row items-center gap-space-xs">
+        <View className="p-margin-mobile border-t border-surface-container flex-row items-center gap-space-xs" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
           <View className="flex-1 bg-surface-container rounded-full px-4 py-2 min-h-[40px] justify-center">
             <TextInput
               value={content}
@@ -118,4 +124,5 @@ export default function CommentsScreen() {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
+
 }
