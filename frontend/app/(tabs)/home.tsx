@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTheme } from "../../src/utils/theme";
-import { View, Text, FlatList, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, Modal } from "react-native";
+import { BlurView } from 'expo-blur';
 import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppDispatch, useAppSelector } from "../../src/store/hooks";
@@ -57,7 +58,8 @@ export default function HomeScreen() {
   const [discoverDepth, setDiscoverDepth] = useState(0);
   const [followingDepth, setFollowingDepth] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-
+  const [showPrivateModal, setShowPrivateModal] = useState(false);
+  const [privateModalUser, setPrivateModalUser] = useState<any>(null);
   useEffect(() => {
     const unsubscribe = navigation.addListener("tabPress" as any, (e: any) => {
       const now = Date.now();
@@ -98,14 +100,25 @@ export default function HomeScreen() {
         activeOpacity={0.7}
       >
         <View className="flex-row items-center justify-between mb-space-sm">
-          <View className="flex-row items-center gap-space-xs">
-            <View className="w-10 h-10 rounded-full bg-surface-container items-center justify-center overflow-hidden border border-outline-variant/30">
+          <TouchableOpacity 
+            className="flex-row items-center gap-space-sm flex-1"
+            onPress={() => {
+              if (item.user?.id === user?.id) {
+                router.push('/(tabs)/profile' as any);
+              } else if (!item.isFollowedBy) {
+                setPrivateModalUser(item.user);
+                setShowPrivateModal(true);
+              } else {
+                router.push(`/user/${item.user.id}` as any);
+              }
+            }}
+          >
+            <View className="w-12 h-12 rounded-full bg-primary-container items-center justify-center overflow-hidden border border-primary/10">
               {item.user?.profileImage ? (
                 <Image
                   source={{ uri: item.user.profileImage }}
                   style={{ width: "100%", height: "100%" }}
                   contentFit="cover"
-                  transition={200}
                 />
               ) : (
                 <Text className="text-primary font-bold text-lg">
@@ -119,7 +132,7 @@ export default function HomeScreen() {
                   {item.user?.name || "Unknown"}
                 </Text>
                 <Text className="text-secondary text-xs">
-                  @{item.user?.name?.toLowerCase().replace(/\s/g, "") || "user"}
+                  @{item.user?.username || item.user?.name?.toLowerCase().replace(/\s/g, "") || "user"}
                 </Text>
               </View>
               <Text className="text-secondary text-xs mt-0.5">
@@ -130,7 +143,7 @@ export default function HomeScreen() {
                 })}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
           <View className="flex-row items-center gap-2">
             {item.user?.id !== user?.id && (
               <TouchableOpacity
@@ -396,14 +409,31 @@ export default function HomeScreen() {
         }
       />
 
-      {/* Floating Action Button */}
-      <TouchableOpacity
-        className="absolute bottom-6 right-6 w-14 h-14 rounded-2xl bg-primary items-center justify-center shadow-lg shadow-primary"
-        activeOpacity={0.8}
-        onPress={() => router.push("/add-note" as any)}
-      >
-        <Ionicons name="pencil" size={24} color={theme.white} />
-      </TouchableOpacity>
+      <Modal visible={showPrivateModal} transparent animationType="fade" onRequestClose={() => setShowPrivateModal(false)}>
+        <BlurView intensity={20} tint="dark" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 24 }}>
+          <View className="bg-surface w-full rounded-[24px] p-6 shadow-xl border border-outline-variant/30 items-center">
+            
+            <View className="w-16 h-16 rounded-full bg-error-container items-center justify-center mb-4">
+              <Ionicons name="lock-closed" size={28} color={theme.error} />
+            </View>
+            
+            <Text className="text-xl font-bold text-on-surface mb-2 text-center">Private Profile</Text>
+            
+            <Text className="text-[15px] text-secondary text-center leading-relaxed mb-6">
+              You cannot view <Text className="font-semibold text-on-surface">{privateModalUser?.name}</Text>&apos;s profile because they are not following you yet. 
+            </Text>
+            
+            <TouchableOpacity 
+              className="w-full bg-primary h-12 rounded-xl items-center justify-center shadow-sm"
+              activeOpacity={0.8}
+              onPress={() => setShowPrivateModal(false)}
+            >
+              <Text className="text-on-primary font-bold text-[15px]">Got it</Text>
+            </TouchableOpacity>
+
+          </View>
+        </BlurView>
+      </Modal>
     </SafeAreaView>
   );
 }

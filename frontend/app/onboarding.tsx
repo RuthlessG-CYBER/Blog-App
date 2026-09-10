@@ -78,12 +78,12 @@ const slides = [
       <View style={{ width }} className="items-center flex-1">
         
         {/* Top Edge-to-Edge Image */}
-        <View className="w-full h-[55%] relative rounded-b-[40px] overflow-hidden shadow-lg">
+        <View className="w-full h-[65%] relative rounded-b-[30px] overflow-hidden shadow-lg">
           <Image source={item.image} style={{ width: '100%', height: '100%' }} contentFit="cover" />
           <View className="absolute inset-0 bg-black/20" />
           
           {/* Floating Tag */}
-          <View className="absolute bottom-6 left-6 px-4 py-2 rounded-full bg-surface/90 shadow-md flex-row items-center gap-2 border border-outline-variant/30">
+          <View className="absolute bottom-6 left-6 px-4 py-2 rounded-2xl bg-surface/90 shadow-md flex-row items-center gap-2 border border-outline-variant/30">
             <Ionicons name={item.icon as any} size={16} color={theme.primary} />
             <Text className="font-sans text-xs text-on-surface font-bold uppercase tracking-widest">{item.badge}</Text>
           </View>
@@ -108,7 +108,7 @@ const slides = [
       
       {/* Floating Skip Button */}
       <SafeAreaView edges={['top']} className="absolute w-full px-6 pt-4 flex-row justify-end items-center z-10 pointer-events-box-none">
-        <TouchableOpacity onPress={handleSkip} className="px-5 py-2 rounded-full bg-black/40 shadow-sm border border-white/20">
+        <TouchableOpacity onPress={handleSkip} className="px-5 py-2 rounded-2xl bg-black/40 shadow-sm border border-white/20">
           <Text className="font-sans text-sm font-medium text-white tracking-wide">Skip</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -166,7 +166,7 @@ const slides = [
 
         {/* Buttons */}
         <TouchableOpacity 
-          className="w-full h-14 bg-primary rounded-full flex-row items-center justify-center gap-2 shadow-sm"
+          className="w-full h-14 bg-primary rounded-2xl flex-row items-center justify-center gap-2 shadow-sm"
           onPress={scrollToNext}
           activeOpacity={0.8}
         >

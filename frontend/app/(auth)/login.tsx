@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../src/utils/theme';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Modal } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Modal, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
@@ -30,6 +30,16 @@ export default function LoginScreen() {
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [loginStatus, setLoginStatus] = useState<'idle' | 'logging_in' | 'success'>('idle');
+
+  // Change Password State
+  const [forgotPasswordVisible, setForgotPasswordVisible] = useState(false);
+  const [forgotPasswordStep, setForgotPasswordStep] = useState<'email' | 'oldPassword' | 'newPassword'>('email');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState('');
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -110,6 +120,99 @@ export default function LoginScreen() {
     }
   };
 
+  const handleCheckEmail = async () => {
+    setForgotError('');
+    if (!forgotEmail) {
+      setForgotError('Please enter your email');
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const res = await api.post('/auth/check-user-type', { email: forgotEmail });
+      if (res.data.data.isGoogle) {
+        setForgotPasswordVisible(false);
+        Toast.show({ type: 'info', text1: 'Google Account', text2: 'This account uses Google. Redirecting...', position: 'bottom' });
+        setTimeout(() => {
+          Linking.openURL('https://myaccount.google.com/security');
+        }, 1500);
+      } else {
+        setForgotPasswordStep('oldPassword');
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Error checking account';
+      setForgotError(msg);
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleVerifyOldPassword = async () => {
+    setForgotError('');
+    if (!oldPassword) {
+      setForgotError('Please enter your old password');
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      await api.post('/auth/verify-old-password', { email: forgotEmail, oldPassword });
+      setForgotPasswordStep('newPassword');
+    } catch (err: any) {
+      let msg = err.response?.data?.message || 'Failed to verify password';
+      if (msg === 'Incorrect old password') {
+        msg = 'Your password is wrong';
+      }
+      setForgotError(msg);
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    setForgotError('');
+    if (!newPassword || !confirmPassword) {
+      setForgotError('Please fill all fields');
+      return;
+    }
+    
+    if (newPassword.length < 8) {
+      setForgotError('Password must be at least 8 characters');
+      return;
+    }
+    if (!/\d/.test(newPassword)) {
+      setForgotError('Password must contain at least one number');
+      return;
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)) {
+      setForgotError('Password must contain at least one symbol');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setForgotError('Passwords do not match');
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      await api.post('/auth/change-password', { email: forgotEmail, oldPassword, newPassword });
+      Toast.show({ type: 'success', text1: 'Success', text2: 'Password changed successfully', position: 'bottom' });
+      setForgotPasswordVisible(false);
+      setForgotPasswordStep('email');
+      setForgotEmail('');
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      let msg = err.response?.data?.message || 'Failed to change password';
+      if (msg === 'Incorrect old password') {
+        msg = 'Your password is wrong';
+      }
+      setForgotError(msg);
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+
   return (
     <SafeAreaView className="flex-1 bg-surface relative overflow-hidden">
       {/* Subtle Non-Colorful Background Effects */}
@@ -120,7 +223,7 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
-        <ScrollView contentContainerClassName="flex-grow justify-center px-margin-mobile py-8" keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerClassName="flex-grow justify-center px-margin-mobile py-8" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           
           <View className="mb-10 mt-2">
             <View className="flex-row items-center gap-2 mb-6">
@@ -171,7 +274,7 @@ export default function LoginScreen() {
             <View className="mb-2">
               <View className="flex-row items-center justify-between mb-1">
                 <Text className="font-sans font-semibold text-sm text-on-surface">Password</Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => setForgotPasswordVisible(true)}>
                   <Text className="font-sans text-xs font-medium text-primary">Forgot password?</Text>
                 </TouchableOpacity>
               </View>
@@ -218,7 +321,16 @@ export default function LoginScreen() {
           </View>
 
           <View className="flex-col gap-3 mb-6">
-            <TouchableOpacity className="w-full h-14 rounded-xl bg-on-surface flex-row items-center justify-center gap-2 shadow-sm">
+            <TouchableOpacity 
+              className="w-full h-14 rounded-xl bg-on-surface flex-row items-center justify-center gap-2 shadow-sm"
+              onPress={() => {
+                if (Platform.OS !== 'ios') {
+                  Toast.show({ type: 'error', text1: 'Apple Login', text2: 'You are not using an Apple device', position: 'bottom' });
+                } else {
+                  Toast.show({ type: 'info', text1: 'Apple Login', text2: 'Apple Sign-in is coming soon!', position: 'bottom' });
+                }
+              }}
+            >
               <Ionicons name="logo-apple" size={18} color={theme.background} />
               <Text className="font-sans text-surface text-[15px] font-bold">Continue with Apple</Text>
             </TouchableOpacity>
@@ -258,6 +370,109 @@ export default function LoginScreen() {
             )}
           </View>
         </BlurView>
+      </Modal>
+      <Modal visible={forgotPasswordVisible} transparent animationType="slide">
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+          className="flex-1 bg-black/50"
+        >
+          <ScrollView 
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+            showsVerticalScrollIndicator={false}
+          >
+            <View className="bg-surface w-full p-6 rounded-t-3xl shadow-lg mt-auto">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="font-sans text-xl font-bold text-on-surface">Change Password</Text>
+                <TouchableOpacity onPress={() => {
+                  setForgotPasswordVisible(false);
+                  setForgotPasswordStep('email');
+                  setForgotEmail('');
+                  setOldPassword('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                }}>
+                  <Ionicons name="close" size={24} color={theme.onSurface} />
+                </TouchableOpacity>
+              </View>
+
+              {forgotError ? (
+                <View className="bg-error/10 p-3 rounded-xl mb-4 border border-error/20">
+                  <Text className="text-error font-sans text-sm">{forgotError}</Text>
+                </View>
+              ) : null}
+
+              {forgotPasswordStep === 'email' ? (
+                <View>
+                  <Text className="font-sans text-sm text-secondary mb-4">Enter your email address to check your account type.</Text>
+                  <TextInput 
+                    className="border border-outline-variant rounded-xl h-14 px-4 text-on-surface text-base mb-4 bg-surface-container-highest"
+                    placeholder="you@example.com"
+                    placeholderTextColor={theme.secondary}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    value={forgotEmail}
+                    onChangeText={setForgotEmail}
+                  />
+                  <TouchableOpacity 
+                    className={`w-full h-14 rounded-xl flex-row justify-center items-center shadow-sm ${forgotLoading ? 'bg-primary/50' : 'bg-primary'}`}
+                    onPress={handleCheckEmail}
+                    disabled={forgotLoading}
+                  >
+                    <Text className="font-sans text-on-primary text-base font-bold">Next</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : forgotPasswordStep === 'oldPassword' ? (
+                <View>
+                  <Text className="font-sans text-sm text-secondary mb-4">Please verify your old password before changing it.</Text>
+                  <TextInput 
+                    className="border border-outline-variant rounded-xl h-14 px-4 text-on-surface text-base mb-4 bg-surface-container-highest"
+                    placeholder="Old Password"
+                    placeholderTextColor={theme.secondary}
+                    secureTextEntry={true}
+                    value={oldPassword}
+                    onChangeText={setOldPassword}
+                  />
+                  <TouchableOpacity 
+                    className={`w-full h-14 rounded-xl flex-row justify-center items-center shadow-sm ${forgotLoading ? 'bg-primary/50' : 'bg-primary'}`}
+                    onPress={handleVerifyOldPassword}
+                    disabled={forgotLoading}
+                  >
+                    <Text className="font-sans text-on-primary text-base font-bold">Verify</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View>
+                  <Text className="font-sans text-sm text-secondary mb-4">Choose a new password.</Text>
+                  <TextInput 
+                    className="border border-outline-variant rounded-xl h-14 px-4 text-on-surface text-base mb-4 bg-surface-container-highest"
+                    placeholder="New Password"
+                    placeholderTextColor={theme.secondary}
+                    secureTextEntry={true}
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                  />
+                  <TextInput 
+                    className="border border-outline-variant rounded-xl h-14 px-4 text-on-surface text-base mb-6 bg-surface-container-highest"
+                    placeholder="Confirm New Password"
+                    placeholderTextColor={theme.secondary}
+                    secureTextEntry={true}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                  />
+                  <TouchableOpacity 
+                    className={`w-full h-14 rounded-xl flex-row justify-center items-center shadow-sm ${forgotLoading ? 'bg-primary/50' : 'bg-primary'}`}
+                    onPress={handleChangePassword}
+                    disabled={forgotLoading}
+                  >
+                    <Text className="font-sans text-on-primary text-base font-bold">Update Password</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

@@ -49,9 +49,6 @@ function RootLayoutNav() {
   useEffect(() => {
     const checkAppInit = async () => {
       try {
-        // TEMP: Reset onboarding for testing. Remove this line in production!
-        await SecureStore.deleteItemAsync('hasLaunched');
-
         const firstLaunch = await SecureStore.getItemAsync('hasLaunched');
         if (firstLaunch === null) {
           dispatch(setFirstLaunch(true));
@@ -129,6 +126,8 @@ function RootLayoutNav() {
       <Stack.Screen name="edit-profile" options={{ presentation: 'transparentModal', animation: 'slide_from_right', headerShown: false }} />
       <Stack.Screen name="edit-note" options={{ presentation: 'transparentModal', animation: 'slide_from_right', headerShown: false }} />
       <Stack.Screen name="notifications" options={{ presentation: 'transparentModal', animation: 'slide_from_right', headerShown: false }} />
+      <Stack.Screen name="terms" options={{ presentation: 'transparentModal', animation: 'slide_from_right', headerShown: false }} />
+      <Stack.Screen name="privacy" options={{ presentation: 'transparentModal', animation: 'slide_from_right', headerShown: false }} />
     </Stack>
   );
 }

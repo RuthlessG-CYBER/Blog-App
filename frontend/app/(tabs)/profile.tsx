@@ -5,8 +5,8 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -35,62 +35,27 @@ export default function ProfileScreen() {
 
   const userPosts = allPosts.filter((post: any) => post.userId === user?.id);
 
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
   const handleLogout = () => {
-    Alert.alert(
-      "Log Out",
-      "Are you sure you want to log out of your account?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Log Out",
-          style: "destructive",
-          onPress: async () => {
-            await dispatch(logoutUser());
-            router.replace("/(auth)/login" as any);
-          },
-        },
-      ],
-    );
+    setShowLogoutModal(true);
   };
+
+  const confirmLogout = async () => {
+    setShowLogoutModal(false);
+    await dispatch(logoutUser());
+    router.replace("/(auth)" as any);
+  };
+
+  const [manageStoryModalVisible, setManageStoryModalVisible] = useState(false);
+  const [selectedStory, setSelectedStory] = useState<any>(null);
+  const [deleteConfirmModalVisible, setDeleteConfirmModalVisible] = useState(false);
 
   const handlePostAction = (item: any) => {
-    const hoursSinceCreation = (new Date().getTime() - new Date(item.createdAt).getTime()) / (1000 * 60 * 60);
-    const isEditable = hoursSinceCreation <= 3;
-
-    const options: any[] = [];
-    
-    if (isEditable) {
-      options.push({
-        text: 'Edit',
-        onPress: () => router.push(`/edit-note?id=${item.id}` as any)
-      });
-    } else {
-      options.push({
-        text: 'Edit (Locked > 3h)',
-        onPress: () => Toast.show({ type: 'error', text1: 'Locked', text2: 'Posts can only be edited within 3 hours of creation.', position: 'bottom' }),
-        style: 'cancel'
-      });
-    }
-
-    options.push({
-      text: 'Delete',
-      style: 'destructive',
-      onPress: () => {
-        Alert.alert('Delete Story', 'Are you sure you want to permanently delete this story?', [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: () => dispatch(deletePost(item.id)) }
-        ]);
-      }
-    });
-
-    options.push({ text: 'Cancel', style: 'cancel' });
-
-    Alert.alert(
-      'Manage Story', 
-      'Disclaimer: Stories can only be edited within 3 hours of publishing. Deletions are permanent.', 
-      options
-    );
+    setSelectedStory(item);
+    setManageStoryModalVisible(true);
   };
+
 
   return (
     <SafeAreaView className="flex-1 bg-surface">
@@ -99,7 +64,7 @@ export default function ProfileScreen() {
         <View className="flex-row items-center gap-space-xs">
           <View className="flex-row items-center gap-1">
             <Text className="text-xl font-bold text-on-surface">
-              @{user?.name?.toLowerCase().replace(/\s/g, "")}
+              @{user?.username || user?.name?.toLowerCase().replace(/\s/g, "")}
             </Text>
             <View className="w-2 h-2 rounded-full bg-primary" />
           </View>
@@ -171,14 +136,20 @@ export default function ProfileScreen() {
               </Text>
               <Text className="text-xs text-secondary mt-1">Stories</Text>
             </View>
-            <View className="flex-1 items-center justify-center py-1 border-r border-surface-container">
+            <TouchableOpacity 
+              className="flex-1 items-center justify-center py-1 border-r border-surface-container"
+              onPress={() => router.push(`/connections?userId=${user?.id}&type=followers`)}
+            >
               <Text className="text-xl font-bold text-on-surface">{user?.followersCount || 0}</Text>
               <Text className="text-xs text-secondary mt-1">Followers</Text>
-            </View>
-            <View className="flex-1 items-center justify-center py-1">
+            </TouchableOpacity>
+            <TouchableOpacity 
+              className="flex-1 items-center justify-center py-1"
+              onPress={() => router.push(`/connections?userId=${user?.id}&type=following`)}
+            >
               <Text className="text-xl font-bold text-on-surface">{user?.followingCount || 0}</Text>
               <Text className="text-xs text-secondary mt-1">Following</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -293,6 +264,137 @@ export default function ProfileScreen() {
           )}
         </View>
       </ScrollView>
+
+      <Modal visible={showLogoutModal} transparent animationType="fade" onRequestClose={() => setShowLogoutModal(false)}>
+        <TouchableOpacity 
+          className="flex-1 bg-black/50 justify-center items-center px-6"
+          activeOpacity={1} 
+          onPress={() => setShowLogoutModal(false)}
+        >
+          <View className="bg-surface w-full p-6 rounded-3xl shadow-lg items-center">
+            <View className="w-16 h-16 rounded-full bg-error/10 items-center justify-center mb-4">
+              <Ionicons name="log-out-outline" size={32} color={theme.error} />
+            </View>
+            <Text className="text-xl font-bold text-on-surface mb-2 tracking-tight">Logging Out?</Text>
+            <Text className="text-secondary text-center leading-relaxed mb-6">
+              Are you sure you want to log out of your account? You will need to sign back in to continue reading and writing.
+            </Text>
+            
+            <View className="w-full gap-3">
+              <TouchableOpacity 
+                className="w-full bg-error py-4 rounded-xl items-center shadow-sm"
+                onPress={confirmLogout}
+              >
+                <Text className="text-on-error font-bold text-base">Yes, Log Out</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                className="w-full bg-surface-container-high py-4 rounded-xl items-center"
+                onPress={() => setShowLogoutModal(false)}
+              >
+                <Text className="text-on-surface font-semibold text-base">Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={manageStoryModalVisible} transparent animationType="slide" onRequestClose={() => setManageStoryModalVisible(false)}>
+        <TouchableOpacity 
+          className="flex-1 justify-end bg-black/40"
+          activeOpacity={1} 
+          onPress={() => setManageStoryModalVisible(false)}
+        >
+          <View className="bg-surface rounded-t-3xl pt-2 pb-8 px-6 shadow-lg border-t border-surface-container">
+            <View className="w-12 h-1.5 bg-outline-variant/50 rounded-full self-center mb-6" />
+            <Text className="text-xl font-bold text-on-surface mb-2 text-center">Manage Story</Text>
+            <Text className="text-secondary text-center text-sm mb-6 px-4">
+              Stories can only be edited within 3 hours of publishing. Deletions are permanent.
+            </Text>
+            
+            <TouchableOpacity 
+              className="flex-row items-center p-4 bg-surface-container rounded-2xl mb-4 shadow-sm"
+              onPress={() => {
+                setManageStoryModalVisible(false);
+                const hoursSinceCreation = (new Date().getTime() - new Date(selectedStory?.createdAt).getTime()) / (1000 * 60 * 60);
+                if (hoursSinceCreation <= 3) {
+                  router.push(`/edit-note?id=${selectedStory?.id}` as any);
+                } else {
+                  Toast.show({ type: 'error', text1: 'Locked', text2: 'Posts can only be edited within 3 hours of creation.', position: 'bottom' });
+                }
+              }}
+            >
+              <View className="w-12 h-12 bg-primary/10 rounded-full items-center justify-center mr-4">
+                <Ionicons name="pencil" size={24} color={theme.primary} />
+              </View>
+              <View>
+                <Text className="text-base font-bold text-on-surface mb-0.5">Edit Story</Text>
+                <Text className="text-xs text-secondary">Make changes to your post</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              className="flex-row items-center p-4 bg-error-container rounded-2xl mb-6 shadow-sm"
+              onPress={() => {
+                setManageStoryModalVisible(false);
+                setTimeout(() => setDeleteConfirmModalVisible(true), 150); // slight delay for smooth transition
+              }}
+            >
+              <View className="w-12 h-12 bg-error/10 rounded-full items-center justify-center mr-4">
+                <Ionicons name="trash" size={24} color={theme.error} />
+              </View>
+              <View>
+                <Text className="text-base font-bold text-on-error-container mb-0.5">Delete Story</Text>
+                <Text className="text-xs text-on-error-container/70">Permanently remove this post</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              className="w-full bg-surface-container-high py-4 rounded-xl items-center"
+              onPress={() => setManageStoryModalVisible(false)}
+            >
+              <Text className="text-on-surface font-semibold text-base">Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={deleteConfirmModalVisible} transparent animationType="fade" onRequestClose={() => setDeleteConfirmModalVisible(false)}>
+        <TouchableOpacity 
+          className="flex-1 bg-black/50 justify-center items-center px-6"
+          activeOpacity={1} 
+          onPress={() => setDeleteConfirmModalVisible(false)}
+        >
+          <View className="bg-surface w-full p-6 rounded-3xl shadow-lg items-center">
+            <View className="w-16 h-16 rounded-full bg-error/10 items-center justify-center mb-4">
+              <Ionicons name="warning" size={32} color={theme.error} />
+            </View>
+            <Text className="text-xl font-bold text-on-surface mb-2 tracking-tight">Delete Story?</Text>
+            <Text className="text-secondary text-center leading-relaxed mb-6">
+              Are you sure you want to permanently delete this story? This action cannot be undone.
+            </Text>
+            
+            <View className="w-full gap-3">
+              <TouchableOpacity 
+                className="w-full bg-error py-4 rounded-xl items-center shadow-sm"
+                onPress={() => {
+                  setDeleteConfirmModalVisible(false);
+                  if (selectedStory) {
+                    dispatch(deletePost(selectedStory.id));
+                  }
+                }}
+              >
+                <Text className="text-on-error font-bold text-base">Yes, Delete</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                className="w-full bg-surface-container-high py-4 rounded-xl items-center"
+                onPress={() => setDeleteConfirmModalVisible(false)}
+              >
+                <Text className="text-on-surface font-semibold text-base">Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }

@@ -78,3 +78,29 @@ export const getUserProfile = async (currentUserId: string, targetUserId: string
   const { passwordHash, ...safeUser } = user;
   return { ...safeUser, isFollowing };
 };
+
+export const getFollowers = async (userId: string) => {
+  const followers = await prisma.follow.findMany({
+    where: { followingId: userId },
+    include: {
+      follower: {
+        select: { id: true, name: true, username: true, profileImage: true, bio: true }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+  return followers.map(f => f.follower);
+};
+
+export const getFollowing = async (userId: string) => {
+  const following = await prisma.follow.findMany({
+    where: { followerId: userId },
+    include: {
+      following: {
+        select: { id: true, name: true, username: true, profileImage: true, bio: true }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+  return following.map(f => f.following);
+};

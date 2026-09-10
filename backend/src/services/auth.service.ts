@@ -6,6 +6,29 @@ import bcrypt from 'bcrypt';
 import prisma from '../config/database';
 import { generateToken } from '../utils/jwt';
 
+const generateUniqueUsername = async (name: string): Promise<string> => {
+  let baseUsername = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!baseUsername) {
+    baseUsername = 'user';
+  }
+  
+  let username = baseUsername;
+  let counter = 1;
+  let isUnique = false;
+  
+  while (!isUnique) {
+    const existing = await prisma.user.findUnique({ where: { username } });
+    if (!existing) {
+      isUnique = true;
+    } else {
+      username = `${baseUsername}${counter}`;
+      counter++;
+    }
+  }
+  
+  return username;
+};
+
 export const registerUser = async (data: any) => {
   const { name, email, password } = data;
 
@@ -17,9 +40,12 @@ export const registerUser = async (data: any) => {
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash(password, salt);
 
+  const username = await generateUniqueUsername(name);
+
   const user = await prisma.user.create({
     data: {
       name,
+      username,
       email: email.toLowerCase(),
       passwordHash,
     },
@@ -28,7 +54,7 @@ export const registerUser = async (data: any) => {
   const token = generateToken(user.id);
 
   return {
-    user: { id: user.id, name: user.name, email: user.email, bio: user.bio, profileImage: user.profileImage, postsCount: 0, followersCount: 0, followingCount: 0 },
+    user: { id: user.id, name: user.name, username: user.username, email: user.email, bio: user.bio, profileImage: user.profileImage, postsCount: 0, followersCount: 0, followingCount: 0 },
     token,
   };
 };
@@ -56,6 +82,7 @@ export const loginUser = async (data: any) => {
     user: { 
       id: user.id, 
       name: user.name, 
+      username: user.username,
       email: user.email,
       bio: user.bio,
       profileImage: user.profileImage,
@@ -82,6 +109,7 @@ export const getUserById = async (userId: string) => {
   return {
     id: user.id,
     name: user.name,
+    username: user.username,
     email: user.email,
     bio: user.bio,
     profileImage: user.profileImage,
@@ -90,12 +118,22 @@ export const getUserById = async (userId: string) => {
 };
 
 export const updateProfile = async (userId: string, data: any) => {
-  const { name, bio, profileImage, profileImageUpdatedAt } = data;
+  const { name, username, bio, profileImage, profileImageUpdatedAt } = data;
+
+  if (username) {
+    const existing = await prisma.user.findFirst({
+      where: { username, id: { not: userId } }
+    });
+    if (existing) {
+      throw { statusCode: 409, message: 'Username is already taken' };
+    }
+  }
 
   const user = await prisma.user.update({
     where: { id: userId },
     data: {
       ...(name && { name }),
+      ...(username && { username }),
       ...(bio !== undefined && { bio }),
       ...(profileImage !== undefined && { profileImage }),
       ...(profileImageUpdatedAt !== undefined && { profileImageUpdatedAt }),
@@ -110,6 +148,7 @@ export const updateProfile = async (userId: string, data: any) => {
   return {
     id: user.id,
     name: user.name,
+    username: user.username,
     email: user.email,
     bio: user.bio,
     profileImage: user.profileImage,
@@ -139,10 +178,12 @@ export const googleAuth = async (idToken: string) => {
   });
 
   if (!user) {
+    const username = await generateUniqueUsername(name);
     user = await prisma.user.create({
       data: {
         email,
         name,
+        username,
         googleId,
         profileImage,
       },
@@ -162,6 +203,7 @@ export const googleAuth = async (idToken: string) => {
     user: {
       id: user.id,
       name: user.name,
+      username: user.username,
       email: user.email,
       bio: user.bio,
       profileImage: user.profileImage,
@@ -169,4 +211,58 @@ export const googleAuth = async (idToken: string) => {
     },
     token
   };
+};
+
+export const checkUserType = async (email: string) => {
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  if (!user) {
+    throw { statusCode: 404, message: 'User not found' };
+  }
+  
+  const isGoogle = !user.passwordHash && !!user.googleId;
+  return { isGoogle };
+};
+
+export const verifyOldPassword = async (data: any) => {
+  const { email, oldPassword } = data;
+
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  if (!user || !user.passwordHash) {
+    throw { statusCode: 404, message: 'User not found or no local password' };
+  }
+
+  const isMatch = await bcrypt.compare(oldPassword, user.passwordHash);
+  if (!isMatch) {
+    throw { statusCode: 401, message: 'Incorrect old password' };
+  }
+
+  return { message: 'Old password verified' };
+};
+
+export const changePassword = async (data: any) => {
+  const { email, oldPassword, newPassword } = data;
+
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  if (!user) {
+    throw { statusCode: 404, message: 'User not found' };
+  }
+
+  if (!user.passwordHash) {
+    throw { statusCode: 400, message: 'This account does not have a local password. Please use Google login.' };
+  }
+
+  const isMatch = await bcrypt.compare(oldPassword, user.passwordHash);
+  if (!isMatch) {
+    throw { statusCode: 401, message: 'Incorrect old password' };
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const passwordHash = await bcrypt.hash(newPassword, salt);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash },
+  });
+
+  return { message: 'Password updated successfully' };
 };

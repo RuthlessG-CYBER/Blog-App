@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../src/utils/theme';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppDispatch, useAppSelector } from '../src/store/hooks';
@@ -24,6 +24,8 @@ export default function EditNoteScreen() {
   const [image, setImage] = useState<string | null>(post?.imageUrl || null);
   const [loading, setLoading] = useState(false);
 
+  const [showImageOptions, setShowImageOptions] = useState(false);
+
   useEffect(() => {
     if (!post) {
       Toast.show({ type: 'error', text1: 'Error', text2: 'Post not found', position: 'bottom' });
@@ -31,17 +33,41 @@ export default function EditNoteScreen() {
     }
   }, [post]);
 
-  const pickImage = async () => {
+  const handleImageResult = (result: ImagePicker.ImagePickerResult) => {
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    setShowImageOptions(false);
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Toast.show({ type: 'error', text1: 'Permission Denied', text2: 'Camera access is required.' });
+      return;
+    }
+    let result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 1,
+    });
+    handleImageResult(result);
+  };
+
+  const handleChooseLibrary = async () => {
+    setShowImageOptions(false);
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [16, 9],
       quality: 1,
     });
+    handleImageResult(result);
+  };
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setImage(result.assets[0].uri);
-    }
+  const pickImage = () => {
+    setShowImageOptions(true);
   };
 
   const handlePost = async () => {
@@ -157,6 +183,45 @@ export default function EditNoteScreen() {
 
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal visible={showImageOptions} transparent animationType="fade" onRequestClose={() => setShowImageOptions(false)}>
+        <TouchableOpacity 
+          className="flex-1 justify-end bg-black/40"
+          activeOpacity={1} 
+          onPress={() => setShowImageOptions(false)}
+        >
+          <View className="bg-surface rounded-t-3xl pt-2 pb-8 px-6 shadow-lg border-t border-surface-container">
+            <View className="w-12 h-1.5 bg-outline-variant/50 rounded-full self-center mb-6" />
+            <Text className="text-xl font-bold text-on-surface mb-6 text-center">Add Photo</Text>
+            
+            <TouchableOpacity 
+              className="flex-row items-center p-4 bg-surface-container rounded-2xl mb-4 shadow-sm"
+              onPress={handleTakePhoto}
+            >
+              <View className="w-12 h-12 bg-primary/10 rounded-full items-center justify-center mr-4">
+                <Ionicons name="camera" size={24} color={theme.primary} />
+              </View>
+              <View>
+                <Text className="text-base font-bold text-on-surface mb-0.5">Take a Photo</Text>
+                <Text className="text-xs text-secondary">Use your camera to capture now</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              className="flex-row items-center p-4 bg-surface-container rounded-2xl shadow-sm"
+              onPress={handleChooseLibrary}
+            >
+              <View className="w-12 h-12 bg-primary/10 rounded-full items-center justify-center mr-4">
+                <Ionicons name="images" size={24} color={theme.primary} />
+              </View>
+              <View>
+                <Text className="text-base font-bold text-on-surface mb-0.5">Choose from Library</Text>
+                <Text className="text-xs text-secondary">Upload an existing photo</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }

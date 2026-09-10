@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { toggleFollowUser, getUserProfile } from '../services/user.service';
+import { toggleFollowUser, getUserProfile, getFollowers, getFollowing } from '../services/user.service';
 import { successResponse } from '../utils/response';
 
 export const toggleFollow = async (req: Request, res: Response, next: NextFunction) => {
@@ -19,6 +19,26 @@ export const getProfile = async (req: Request, res: Response, next: NextFunction
     const targetUserId = req.params.id as string;
     const result = await getUserProfile(currentUserId, targetUserId);
     return successResponse(res, 200, 'User profile retrieved successfully', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getFollowersController = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.params.id as string;
+    const result = await getFollowers(userId);
+    return successResponse(res, 200, 'Followers retrieved', result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getFollowingController = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.params.id as string;
+    const result = await getFollowing(userId);
+    return successResponse(res, 200, 'Following retrieved', result);
   } catch (error) {
     next(error);
   }

@@ -143,7 +143,7 @@ export const getDiscoverPosts = async (userId: string, query: any) => {
     where: { id: { in: postIds } },
     orderBy: { createdAt: 'desc' },
     include: {
-      user: { select: { id: true, name: true, email: true, profileImage: true } },
+      user: { select: { id: true, name: true, username: true, email: true, profileImage: true } },
       _count: { select: { likes: true, comments: true } },
       likes: { where: { userId } },
       savedBy: { where: { userId } }
@@ -155,10 +155,16 @@ export const getDiscoverPosts = async (userId: string, query: any) => {
   });
   const followingIds = new Set(following.map(f => f.followingId));
 
+  const followers = await prisma.follow.findMany({
+    where: { followingId: userId, followerId: { in: posts.map(p => p.userId) } }
+  });
+  const followerIds = new Set(followers.map(f => f.followerId));
+
   const formattedPosts = postIds.map(id => {
     const post = posts.find(p => p.id === id)!;
     return {
       isFollowing: followingIds.has(post.userId),
+      isFollowedBy: followerIds.has(post.userId),
       ...post,
       likesCount: post._count.likes, commentsCount: post._count.comments,
       isLiked: post.likes.length > 0,
@@ -188,8 +194,6 @@ export const getFollowingPosts = async (userId: string, query: any) => {
     where: { followerId: userId }
   });
   const followingIds = following.map(f => f.followingId);
-  followingIds.push(userId);
-
   
 
   const total = await prisma.post.count({
@@ -202,16 +206,22 @@ export const getFollowingPosts = async (userId: string, query: any) => {
     skip,
     take,
     include: {
-      user: { select: { id: true, name: true, email: true, profileImage: true } },
+      user: { select: { id: true, name: true, username: true, email: true, profileImage: true } },
       _count: { select: { likes: true, comments: true } },
       likes: { where: { userId } },
       savedBy: { where: { userId } }
     }
   });
 
+  const followers = await prisma.follow.findMany({
+    where: { followingId: userId, followerId: { in: posts.map(p => p.userId) } }
+  });
+  const followerIds = new Set(followers.map(f => f.followerId));
+
   const formattedPosts = posts.map(post => {
     return {
       isFollowing: true,
+      isFollowedBy: followerIds.has(post.userId),
       ...post,
       likesCount: post._count.likes,
       commentsCount: post._count.comments,
@@ -402,7 +412,7 @@ export const getSavedPosts = async (userId: string, query: any) => {
       include: {
         post: {
           include: {
-            user: { select: { id: true, name: true, profileImage: true } },
+            user: { select: { id: true, name: true, username: true, profileImage: true } },
             _count: { select: { likes: true, comments: true } },
             likes: { where: { userId } },
             savedBy: { where: { userId } }
@@ -413,8 +423,14 @@ export const getSavedPosts = async (userId: string, query: any) => {
     prisma.savedPost.count({ where: { userId } }),
   ]);
 
+  const followers = await prisma.follow.findMany({
+    where: { followingId: userId, followerId: { in: savedPosts.map(sp => sp.post.userId) } }
+  });
+  const followerIds = new Set(followers.map(f => f.followerId));
+
   const formattedPosts = savedPosts.map(sp => ({
     ...sp.post,
+    isFollowedBy: followerIds.has(sp.post.userId),
     likesCount: sp.post._count.likes,
     commentsCount: sp.post._count.comments,
     isLiked: sp.post.likes.length > 0,
@@ -447,7 +463,7 @@ export const addComment = async (userId: string, postId: string, content: string
     },
     include: {
       user: {
-        select: { id: true, name: true, email: true, profileImage: true },
+        select: { id: true, name: true, username: true, email: true, profileImage: true },
       },
     },
   });
@@ -472,7 +488,7 @@ export const getComments = async (postId: string) => {
     orderBy: { createdAt: 'desc' },
     include: {
       user: {
-        select: { id: true, name: true, profileImage: true },
+        select: { id: true, name: true, username: true, profileImage: true },
       },
     },
   });

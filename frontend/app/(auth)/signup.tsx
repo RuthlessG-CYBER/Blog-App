@@ -104,6 +104,15 @@ export default function SignupScreen() {
       });
       return;
     }
+    if (!hasLength || !hasNumber || !hasSymbol) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Password must be 8+ chars with a number and symbol',
+        position: 'bottom',
+      });
+      return;
+    }
     if (!passwordsMatch) {
       Toast.show({
         type: 'error',
@@ -154,7 +163,7 @@ export default function SignupScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
-        <ScrollView contentContainerClassName="flex-grow px-margin-mobile py-8" keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerClassName="flex-grow px-margin-mobile py-8" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           
           <View className="mb-10 mt-2">
             <View className="flex-row items-center gap-2 mb-6">
@@ -274,18 +283,18 @@ export default function SignupScreen() {
               </View>
             </View>
 
-            <TouchableOpacity 
-              className="flex-row items-start gap-2 pt-2"
-              onPress={() => setTermsAccepted(!termsAccepted)}
-              activeOpacity={0.8}
-            >
-              <View className={`w-5 h-5 rounded flex items-center justify-center mt-0.5 ${termsAccepted ? 'bg-primary' : 'bg-surface-container-highest border border-outline-variant'}`}>
+            <View className="flex-row items-start gap-2 pt-2">
+              <TouchableOpacity 
+                onPress={() => setTermsAccepted(!termsAccepted)}
+                activeOpacity={0.8}
+                className={`w-5 h-5 rounded flex items-center justify-center mt-0.5 ${termsAccepted ? 'bg-primary' : 'bg-surface-container-highest border border-outline-variant'}`}
+              >
                 {termsAccepted && <Ionicons name="checkmark" size={14} color={theme.onPrimary} />}
-              </View>
+              </TouchableOpacity>
               <Text className="font-sans flex-1 text-sm text-secondary leading-snug">
-                By signing up, you agree to Chronicle&apos;s <Text className="font-sans text-primary underline">Terms of Service</Text> and <Text className="font-sans text-primary underline">Privacy Policy</Text>.
+                By signing up, you agree to Chronicle&apos;s <Text onPress={() => router.push('/terms' as any)} className="font-sans text-primary underline">Terms of Service</Text> and <Text onPress={() => router.push('/privacy' as any)} className="font-sans text-primary underline">Privacy Policy</Text>.
               </Text>
-            </TouchableOpacity>
+            </View>
           </View>
 
           <TouchableOpacity 
@@ -304,7 +313,16 @@ export default function SignupScreen() {
           </View>
 
           <View className="flex-row gap-3 mb-6">
-            <TouchableOpacity className="flex-1 h-14 rounded-xl bg-surface-container-highest border border-outline-variant flex-row items-center justify-center gap-2 shadow-sm">
+            <TouchableOpacity 
+              className="flex-1 h-14 rounded-xl bg-surface-container-highest border border-outline-variant flex-row items-center justify-center gap-2 shadow-sm"
+              onPress={() => {
+                if (Platform.OS !== 'ios') {
+                  Toast.show({ type: 'error', text1: 'Apple Signup', text2: 'You are not using an Apple device', position: 'bottom' });
+                } else {
+                  Toast.show({ type: 'info', text1: 'Apple Signup', text2: 'Apple Sign-in is coming soon!', position: 'bottom' });
+                }
+              }}
+            >
               <Ionicons name="logo-apple" size={18} color={theme.onSurface} />
               <Text className="text-on-surface font-medium text-[15px]">Apple</Text>
             </TouchableOpacity>

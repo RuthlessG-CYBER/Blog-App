@@ -63,6 +63,7 @@ export const updateProfile = createAsyncThunk(
     try {
       const formData = new FormData();
       if (profileData.name) formData.append('name', profileData.name);
+      if (profileData.username) formData.append('username', profileData.username);
       if (profileData.bio) formData.append('bio', profileData.bio);
       
       if (profileData.imageUri) {

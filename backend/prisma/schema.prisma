@@ -11,11 +11,13 @@ model User {
   id                    String         @id @default(uuid())
   googleId              String?        @unique
   name                  String
+  username              String?        @unique
   email                 String         @unique
   passwordHash          String?
   bio                   String?
   profileImage          String?
   profileImageUpdatedAt DateTime?
+
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
   posts                 Post[]

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../src/utils/theme';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Modal } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Modal, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,22 +16,49 @@ export default function EditProfileScreen() {
   const { user, loading } = useAppSelector((state) => state.auth);
 
   const [name, setName] = useState(user?.name || '');
+  const [username, setUsername] = useState(user?.username || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success'>('idle');
 
-  const handlePickImage = async () => {
+  const [showImageOptions, setShowImageOptions] = useState(false);
+
+  const handleImageResult = (result: ImagePicker.ImagePickerResult) => {
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    setShowImageOptions(false);
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      setError('Camera access is required to take a photo.');
+      return;
+    }
+    let result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    handleImageResult(result);
+  };
+
+  const handleChooseLibrary = async () => {
+    setShowImageOptions(false);
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
     });
+    handleImageResult(result);
+  };
 
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
-    }
+  const handlePickImage = () => {
+    setShowImageOptions(true);
   };
 
   const goBackSafe = () => {
@@ -48,9 +75,17 @@ export default function EditProfileScreen() {
       setError(`Bio cannot exceed 50 words. Currently: ${words.length}`);
       return;
     }
+    if (username.length < 3 || username.length > 30 || !/^[a-zA-Z0-9_]+$/.test(username)) {
+      setError('Username must be 3-30 characters long and can only contain letters, numbers, and underscores.');
+      return;
+    }
     setError('');
 
     const profileData: any = { name, bio };
+    if (username !== user?.username) {
+      profileData.username = username;
+    }
+    
     if (imageUri) {
       profileData.imageUri = imageUri;
     }
@@ -123,6 +158,21 @@ export default function EditProfileScreen() {
           </View>
 
           <View className="mb-space-lg">
+            <Text className="text-sm font-semibold text-secondary mb-2 uppercase tracking-wider">Username</Text>
+            <View className="flex-row items-center bg-surface-container-highest border border-outline-variant rounded-xl px-4">
+              <Text className="text-secondary text-base">@</Text>
+              <TextInput
+                className="flex-1 py-4 px-2 text-base text-on-surface"
+                value={username}
+                onChangeText={setUsername}
+                placeholder="username"
+                placeholderTextColor={theme.secondary}
+                autoCapitalize="none"
+              />
+            </View>
+          </View>
+
+          <View className="mb-space-lg">
             <View className="flex-row items-center justify-between mb-2">
               <Text className="text-sm font-semibold text-secondary uppercase tracking-wider">Bio</Text>
               <Text className={`text-xs ${bio.trim().split(/\s+/).filter((w: string) => w.length > 0).length > 50 ? 'text-error' : 'text-secondary'}`}>
@@ -170,6 +220,45 @@ export default function EditProfileScreen() {
             )}
           </View>
         </View>
+      </Modal>
+
+      <Modal visible={showImageOptions} transparent animationType="fade" onRequestClose={() => setShowImageOptions(false)}>
+        <TouchableOpacity 
+          className="flex-1 justify-end bg-black/40"
+          activeOpacity={1} 
+          onPress={() => setShowImageOptions(false)}
+        >
+          <View className="bg-surface rounded-t-3xl pt-2 pb-8 px-6 shadow-lg border-t border-surface-container">
+            <View className="w-12 h-1.5 bg-outline-variant/50 rounded-full self-center mb-6" />
+            <Text className="text-xl font-bold text-on-surface mb-6 text-center">Profile Photo</Text>
+            
+            <TouchableOpacity 
+              className="flex-row items-center p-4 bg-surface-container rounded-2xl mb-4 shadow-sm"
+              onPress={handleTakePhoto}
+            >
+              <View className="w-12 h-12 bg-primary/10 rounded-full items-center justify-center mr-4">
+                <Ionicons name="camera" size={24} color={theme.primary} />
+              </View>
+              <View>
+                <Text className="text-base font-bold text-on-surface mb-0.5">Take a Photo</Text>
+                <Text className="text-xs text-secondary">Use your camera to capture now</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              className="flex-row items-center p-4 bg-surface-container rounded-2xl shadow-sm"
+              onPress={handleChooseLibrary}
+            >
+              <View className="w-12 h-12 bg-primary/10 rounded-full items-center justify-center mr-4">
+                <Ionicons name="images" size={24} color={theme.primary} />
+              </View>
+              <View>
+                <Text className="text-base font-bold text-on-surface mb-0.5">Choose from Library</Text>
+                <Text className="text-xs text-secondary">Upload an existing photo</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
